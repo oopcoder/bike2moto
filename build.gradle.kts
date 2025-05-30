@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.intellij.platform") version "2.3.0"
 }
 
-group = "com.bing.lan"
+group = "com.oopcoder"
 version = "1.0-SNAPSHOT"
 
 repositories {

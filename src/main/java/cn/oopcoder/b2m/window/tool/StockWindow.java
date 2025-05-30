@@ -1,7 +1,14 @@
 package cn.oopcoder.b2m.window.tool;
 
+import cn.oopcoder.b2m.consts.Const;
+import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.ui.AnActionButton;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.table.JBTable;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,6 +25,7 @@ public class StockWindow {
     public JTable table;
     public volatile Integer count;
     public volatile Integer column;
+    volatile boolean refreshFlag = true;
 
     public StockWindow() {
         createUI();
@@ -34,6 +42,20 @@ public class StockWindow {
         table.setRowSorter(sorter);
 
         JPanel panel = ToolbarDecorator.createDecorator(table)
+                .addExtraAction(new AnActionButton(Const.STOP_REFRESH_TABLE, AllIcons.Actions.Pause) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        refreshFlag = !refreshFlag;
+                        e.getPresentation().setIcon(refreshFlag ? AllIcons.Actions.Pause : AllIcons.Actions.Refresh);
+                        e.getPresentation().setText(refreshFlag ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
+                        refresh(refreshFlag);
+                    }
+
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
+                })
                 .createPanel();
 
         rootPanel.add(panel, BorderLayout.CENTER);
@@ -88,6 +110,13 @@ public class StockWindow {
                 table.getRowSorter().setSortKeys(keys);
             }
         });
+
+
+    }
+
+    private void refresh(boolean refresh) {
+
+        System.out.println("refresh(): 刷新状态: " + refresh);
 
 
     }
