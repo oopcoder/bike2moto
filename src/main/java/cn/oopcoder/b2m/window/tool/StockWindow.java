@@ -1,13 +1,13 @@
 package cn.oopcoder.b2m.window.tool;
 
 import cn.oopcoder.b2m.bean.StockDataBean;
+import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.utils.FileUtilTest;
 import cn.oopcoder.b2m.utils.HttpClientPool;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
-import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.ToolbarDecorator;
@@ -21,6 +21,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -28,10 +29,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -48,19 +48,18 @@ public class StockWindow {
     public volatile Integer count;
     public volatile Integer column;
     private volatile boolean refreshing = false;
+    private DefaultTableModel tableModel;
+    private Map<String, StockDataBean> stockDataBeanMap;
 
     public StockWindow() {
         createUI();
     }
 
     private void createUI() {
-        DefaultTableModel model = new DefaultTableModel(
-                new Object[][]{{5, "Alice"}, {2, "Bob"}, {3, "ijj"}, {1, "rt"}, {4, "peter"}},
-                new String[]{"ID", "Name"}
-        );
-        table = new JBTable(model);
+        tableModel = new DefaultTableModel();
+        table = new JBTable(tableModel);
 
-        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        TableRowSorter<TableModel> sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
@@ -157,8 +156,24 @@ public class StockWindow {
             }
         });
 
+        // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
+        tableModel.setColumnIdentifiers(tableColumns());
 
+        stockDataBeanMap = getInitStockDataMap();
+
+        // 第一次刷新一下
+        refresh();
     }
+
+
+    public String[] tableColumns() {
+        return jbCheckBox.isSelected() ? StockDataBean.hiddenTableColumns : StockDataBean.normalTableColumns;
+    }
+
+    public List<TableFieldInfo> tableFieldInfo() {
+        return jbCheckBox.isSelected() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
+    }
+
 
     public void toggleScheduledJob(boolean start) {
         System.out.println("启停定时任务: " + start);
@@ -179,7 +194,7 @@ public class StockWindow {
 
     public void refresh() {
 
-        getStockData();
+        updateStockData(stockDataBeanMap);
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -188,55 +203,55 @@ public class StockWindow {
             }
         });
 
+
     }
 
-    public static void getStockData() {
-        java.util.List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/StockConfig.json", new TypeReference<>() {
+    public static Map<String, StockDataBean> getInitStockDataMap() {
+        List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/StockConfig.json", new TypeReference<>() {
         });
 
-        Map<String, StockDataBean> stockDataBeanMap = stockDataBeanList.stream()
+        return stockDataBeanList.stream()
                 .collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
+    }
+
+    public static void updateStockData(Map<String, StockDataBean> stockDataBeanMap) {
 
         String codes = String.join(",", stockDataBeanMap.keySet());
 
         try {
             String result = HttpClientPool.getHttpClient().get("http://qt.gtimg.cn/q=" + codes);
-            parse(stockDataBeanMap, result);
 
+            String[] lines = result.split("\n");
+            for (String line : lines) {
+                String code = line.substring(line.indexOf("_") + 1, line.indexOf("="));
+                String dataStr = line.substring(line.indexOf("=") + 2, line.length() - 2);
+                String[] values = dataStr.split("~");
+
+                StockDataBean stockDataBean = stockDataBeanMap.get(code);
+                if (stockDataBean == null) {
+                    continue;
+                }
+
+                stockDataBean.setName(values[1]);
+                stockDataBean.setChange(values[31]);
+                stockDataBean.setChangePercent(values[32]);
+                try {
+                    Date date = new SimpleDateFormat("yyyyMMddHHmmss").parse(values[30]);
+                    stockDataBean.setTime(DateFormatUtils.format(date, "HH:mm:ss"));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    stockDataBean.setTime(values[30]);
+                }
+
+                stockDataBean.setCurrentPrice(values[3]);
+                stockDataBean.setHigh(values[33]);// 33
+                stockDataBean.setLow(values[34]);// 34
+
+                System.out.println("parse(): " + stockDataBean);
+
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
-
-    public static void parse(Map<String, StockDataBean> stockDataBeanMap, String result) {
-        String[] lines = result.split("\n");
-        for (String line : lines) {
-            String code = line.substring(line.indexOf("_") + 1, line.indexOf("="));
-            String dataStr = line.substring(line.indexOf("=") + 2, line.length() - 2);
-            String[] values = dataStr.split("~");
-
-            StockDataBean stockDataBean = stockDataBeanMap.get(code);
-            if (stockDataBean == null) {
-                continue;
-            }
-
-            stockDataBean.setName(values[1]);
-            stockDataBean.setChange(values[31]);
-            stockDataBean.setChangePercent(values[32]);
-            try {
-                Date date = new SimpleDateFormat("yyyyMMddHHmmss").parse(values[30]);
-                stockDataBean.setTime(DateFormatUtils.format(date, "HH:mm:ss"));
-            } catch (ParseException e) {
-                e.printStackTrace();
-                stockDataBean.setTime(values[30]);
-            }
-
-            stockDataBean.setCurrentPrice(values[3]);
-            stockDataBean.setHigh(values[33]);// 33
-            stockDataBean.setLow(values[34]);// 34
-            System.out.println("parse(): " + stockDataBean);
-        }
-    }
-
 }

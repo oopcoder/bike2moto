@@ -5,13 +5,15 @@ import cn.oopcoder.b2m.window.tool.StockWindow;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 
 public class StockWindowTest {
 
 
     @Test
     public void testGetStockData() {
-        StockWindow.getStockData();
+        Map<String, StockDataBean> stockDataMap = StockWindow.getInitStockDataMap();
+        StockWindow.updateStockData(stockDataMap);
     }
 
     @Test

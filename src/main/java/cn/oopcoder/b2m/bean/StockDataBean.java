@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.sisu.Hidden;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -55,6 +56,14 @@ public class StockDataBean {
 
     @TableColumn(name = "时间", order = 13, showMode = {Normal})
     private String time;
+
+
+    public static List<TableFieldInfo> hiddenTableFields = getTableColumns(Hidden);
+    public static String[] hiddenTableColumns = hiddenTableFields.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
+
+
+    public static List<TableFieldInfo> normalTableFields = getTableColumns(Normal);
+    public static String[] normalTableColumns = normalTableFields.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
 
     public static List<TableFieldInfo> getTableColumns(ShowMode showMode) {
         return Arrays.stream(StockDataBean.class.getDeclaredFields())
