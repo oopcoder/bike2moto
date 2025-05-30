@@ -1,0 +1,20 @@
+<idea-plugin>
+    <id>cn.oopcoder.b2m</id>
+
+    <name>Bike2Moto</name>
+
+    <vendor url="https://gitee.com/oopcoder/bike2moto.git">oopcoder@163.com</vendor>
+
+    <description><![CDATA[
+        牛马们！！摸一摸，单车变摩托！！🚴→🏍️
+        牛马们！！摸一摸，单车变摩托！！🚴→🏍️
+
+        https://gitee.com/oopcoder/bike2moto.git
+        https://github.com/oopcoder/bike2moto.git
+  ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+    </extensions>
+</idea-plugin>
