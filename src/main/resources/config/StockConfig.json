@@ -1,0 +1,40 @@
+[
+  {
+    "code": "sz300059",
+    "maskName": "dc",
+    "alias": "富"
+  },
+  {
+    "code": "sh513090",
+    "maskName": "xgzq",
+    "alias": "港"
+  },
+  {
+    "code": "sz002195",
+    "alias": "岩"
+  },
+  {
+    "code": "sh601360",
+    "alias": "360"
+  },
+  {
+    "code": "sh600031",
+    "alias": "31"
+  },
+  {
+    "code": "sh600900",
+    "alias": "电"
+  },
+  {
+    "code": "sh601211",
+    "alias": "泰"
+  },
+  {
+    "code": "sh601138",
+    "alias": "联"
+  },
+  {
+    "code": "sh562500",
+    "alias": "器"
+  }
+]

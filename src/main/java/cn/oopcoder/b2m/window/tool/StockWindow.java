@@ -1,13 +1,17 @@
 package cn.oopcoder.b2m.window.tool;
 
+import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.consts.Const;
+import cn.oopcoder.b2m.utils.FileUtilTest;
+import cn.oopcoder.b2m.utils.HttpClientPool;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
-import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.table.JBTable;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -18,7 +22,13 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class StockWindow {
     public JPanel rootPanel;
@@ -114,10 +124,61 @@ public class StockWindow {
 
     }
 
-    private void refresh(boolean refresh) {
+    public static void refresh(boolean refresh) {
 
         System.out.println("refresh(): 刷新状态: " + refresh);
 
+        if (!refresh) {
+            return;
+        }
+
+        java.util.List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/StockConfig.json", new TypeReference<>() {
+        });
+
+        Map<String, StockDataBean> stockDataBeanMap = stockDataBeanList.stream()
+                .collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
+
+        String codes = String.join(",", stockDataBeanMap.keySet());
+
+        try {
+            String result = HttpClientPool.getHttpClient().get("http://qt.gtimg.cn/q=" + codes);
+            parse(stockDataBeanMap, result);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
+
+    public static void parse(Map<String, StockDataBean> stockDataBeanMap, String result) {
+        String[] lines = result.split("\n");
+        for (String line : lines) {
+            String code = line.substring(line.indexOf("_") + 1, line.indexOf("="));
+            String dataStr = line.substring(line.indexOf("=") + 2, line.length() - 2);
+            String[] values = dataStr.split("~");
+
+
+            StockDataBean stockDataBean = stockDataBeanMap.get(code);
+            if (stockDataBean == null) {
+                continue;
+            }
+
+            stockDataBean.setName(values[1]);
+            stockDataBean.setChange(values[31]);
+            stockDataBean.setChangePercent(values[32]);
+            try {
+                Date date = new SimpleDateFormat("yyyyMMddHHmmss").parse(values[30]);
+                stockDataBean.setTime(DateFormatUtils.format(date, "HH:mm:ss"));
+            } catch (ParseException e) {
+                e.printStackTrace();
+                stockDataBean.setTime(values[30]);
+            }
+
+            stockDataBean.setCurrentPrice(values[3]);
+            stockDataBean.setHigh(values[33]);// 33
+            stockDataBean.setLow(values[34]);// 34
+            System.out.println("parse(): " + stockDataBean);
+        }
+    }
+
 }
