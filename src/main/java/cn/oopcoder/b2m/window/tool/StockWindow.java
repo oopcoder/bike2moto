@@ -5,6 +5,7 @@ import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.utils.FileUtilTest;
 import cn.oopcoder.b2m.utils.HttpClientPool;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
@@ -14,6 +15,7 @@ import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
+
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,6 +25,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -33,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,7 +47,6 @@ public class StockWindow {
     private JBTable table;
     private JBLabel refreshTimeLabel;
     private JBCheckBox jbCheckBox;
-
 
     public volatile Integer count;
     public volatile Integer column;
@@ -103,7 +106,6 @@ public class StockWindow {
         jbCheckBox.setToolTipText("隐蔽模式");
         jbCheckBox.setSelected(true);
         toolbarDecorator.getActionsPanel().add(jbCheckBox, BorderLayout.WEST);
-
 
         JTableHeader tableHeader = table.getTableHeader();
         tableHeader.addMouseMotionListener(new MouseMotionAdapter() {
@@ -165,15 +167,13 @@ public class StockWindow {
         refresh();
     }
 
-
     public String[] tableColumns() {
-        return jbCheckBox.isSelected() ? StockDataBean.hiddenTableColumns : StockDataBean.normalTableColumns;
+        return tableFieldInfo().stream().map(TableFieldInfo::displayName).toArray(String[]::new);
     }
 
     public List<TableFieldInfo> tableFieldInfo() {
         return jbCheckBox.isSelected() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
     }
-
 
     public void toggleScheduledJob(boolean start) {
         System.out.println("启停定时任务: " + start);
@@ -193,16 +193,28 @@ public class StockWindow {
     }
 
     public void refresh() {
-
         updateStockData(stockDataBeanMap);
 
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss"));
-            }
-        });
+        // 清空表格模型
+        tableModel.setRowCount(0);
 
+        for (Map.Entry<String, StockDataBean> entry : stockDataBeanMap.entrySet()) {
+
+            List<TableFieldInfo> fieldInfoList = tableFieldInfo();
+
+            Vector<Object> v = new Vector<>(fieldInfoList.size());
+            StockDataBean stockDataBean = entry.getValue();
+
+            for (TableFieldInfo fieldInfo : fieldInfoList) {
+                String fieldName = fieldInfo.fieldName();
+                v.addElement(stockDataBean.getFieldValue(fieldName));
+            }
+
+            tableModel.addRow(v);
+        }
+        tableModel.fireTableRowsUpdated(0, tableModel.getRowCount() - 1);
+
+        SwingUtilities.invokeLater(() -> refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
 
     }
 

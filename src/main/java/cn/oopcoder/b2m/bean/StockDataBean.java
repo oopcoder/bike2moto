@@ -2,11 +2,14 @@ package cn.oopcoder.b2m.bean;
 
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.JacksonUtil;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.sisu.Hidden;
 
@@ -17,7 +20,6 @@ import java.util.stream.Collectors;
 
 import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
 import static cn.oopcoder.b2m.enums.ShowMode.Normal;
-
 
 @Data
 @AllArgsConstructor
@@ -57,13 +59,11 @@ public class StockDataBean {
     @TableColumn(name = "时间", order = 13, showMode = {Normal})
     private String time;
 
-
     public static List<TableFieldInfo> hiddenTableFields = getTableColumns(Hidden);
-    public static String[] hiddenTableColumns = hiddenTableFields.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
-
+    // public static String[] hiddenTableColumns = hiddenTableFields.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
 
     public static List<TableFieldInfo> normalTableFields = getTableColumns(Normal);
-    public static String[] normalTableColumns = normalTableFields.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
+    // public static String[] normalTableColumns = normalTableFields.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
 
     public static List<TableFieldInfo> getTableColumns(ShowMode showMode) {
         return Arrays.stream(StockDataBean.class.getDeclaredFields())
@@ -86,9 +86,21 @@ public class StockDataBean {
                 .collect(Collectors.toList());
     }
 
-
     public StockDataBean(String code) {
         this.code = code;
+    }
+
+    public Object getFieldValue(String fieldName) {
+        // 使用反射获取属性值
+        try {
+            java.lang.reflect.Field field = StockDataBean.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(this);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     @Override
