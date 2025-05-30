@@ -7,9 +7,12 @@ import cn.oopcoder.b2m.utils.HttpClientPool;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.ToolbarDecorator;
+import com.intellij.ui.components.JBCheckBox;
+import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
@@ -37,13 +40,14 @@ import java.util.stream.Collectors;
 public class StockWindow {
 
     public JPanel rootPanel;
-    private JTable table;
-    private JLabel refreshTimeLabel;
+    private JBTable table;
+    private JBLabel refreshTimeLabel;
+    private JBCheckBox jbCheckBox;
+
 
     public volatile Integer count;
     public volatile Integer column;
     private volatile boolean refreshing = false;
-    public final static DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public StockWindow() {
         createUI();
@@ -90,11 +94,16 @@ public class StockWindow {
 
         rootPanel.add(tablePanel, BorderLayout.CENTER);
 
-        refreshTimeLabel = new JLabel();
+        refreshTimeLabel = new JBLabel();
         refreshTimeLabel.setText("请先启动定时刷新");
         refreshTimeLabel.setToolTipText("最后刷新时间");
-        refreshTimeLabel.setBorder(new EmptyBorder(0, 0, 0, 5));
+        refreshTimeLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
         toolbarDecorator.getActionsPanel().add(refreshTimeLabel, BorderLayout.EAST);
+
+        jbCheckBox = new JBCheckBox();
+        jbCheckBox.setToolTipText("隐蔽模式");
+        jbCheckBox.setSelected(true);
+        toolbarDecorator.getActionsPanel().add(jbCheckBox, BorderLayout.WEST);
 
 
         JTableHeader tableHeader = table.getTableHeader();
@@ -175,7 +184,7 @@ public class StockWindow {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                refreshTimeLabel.setText("最后刷新时间: " + DateFormatUtils.format(new Date(), "HH:mm:ss"));
+                refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss"));
             }
         });
 
