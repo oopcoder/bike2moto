@@ -15,6 +15,7 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableRowSorter;
@@ -24,6 +25,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
@@ -32,11 +35,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class StockWindow {
+
     public JPanel rootPanel;
-    public JTable table;
+    private JTable table;
+    private JLabel refreshTimeLabel;
+
     public volatile Integer count;
     public volatile Integer column;
-    volatile boolean refreshing = false;
+    private volatile boolean refreshing = false;
+    public final static DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public StockWindow() {
         createUI();
@@ -52,8 +59,8 @@ public class StockWindow {
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
 
-        JPanel panel = ToolbarDecorator.createDecorator(table)
-                .addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
+        ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
+        JPanel tablePanel = toolbarDecorator.addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
                         refresh();
@@ -81,7 +88,14 @@ public class StockWindow {
                 })
                 .createPanel();
 
-        rootPanel.add(panel, BorderLayout.CENTER);
+        rootPanel.add(tablePanel, BorderLayout.CENTER);
+
+        refreshTimeLabel = new JLabel();
+        refreshTimeLabel.setText("请先启动定时刷新");
+        refreshTimeLabel.setToolTipText("最后刷新时间");
+        refreshTimeLabel.setBorder(new EmptyBorder(0, 0, 0, 5));
+        toolbarDecorator.getActionsPanel().add(refreshTimeLabel, BorderLayout.EAST);
+
 
         JTableHeader tableHeader = table.getTableHeader();
         tableHeader.addMouseMotionListener(new MouseMotionAdapter() {
@@ -154,7 +168,20 @@ public class StockWindow {
         }).start();
     }
 
-    public static void refresh() {
+    public void refresh() {
+
+        getStockData();
+
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                refreshTimeLabel.setText("最后刷新时间: " + DateFormatUtils.format(new Date(), "HH:mm:ss"));
+            }
+        });
+
+    }
+
+    public static void getStockData() {
         java.util.List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/StockConfig.json", new TypeReference<>() {
         });
 

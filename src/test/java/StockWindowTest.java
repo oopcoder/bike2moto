@@ -10,8 +10,8 @@ public class StockWindowTest {
 
 
     @Test
-    public void testRefresh() {
-        StockWindow.refresh();
+    public void testGetStockData() {
+        StockWindow.getStockData();
     }
 
     @Test
