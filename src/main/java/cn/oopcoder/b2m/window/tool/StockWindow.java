@@ -27,6 +27,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,7 +36,7 @@ public class StockWindow {
     public JTable table;
     public volatile Integer count;
     public volatile Integer column;
-    volatile boolean refreshFlag = true;
+    volatile boolean refreshing = false;
 
     public StockWindow() {
         createUI();
@@ -52,13 +53,25 @@ public class StockWindow {
         table.setRowSorter(sorter);
 
         JPanel panel = ToolbarDecorator.createDecorator(table)
-                .addExtraAction(new AnActionButton(Const.STOP_REFRESH_TABLE, AllIcons.Actions.Pause) {
+                .addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
-                        refreshFlag = !refreshFlag;
-                        e.getPresentation().setIcon(refreshFlag ? AllIcons.Actions.Pause : AllIcons.Actions.Refresh);
-                        e.getPresentation().setText(refreshFlag ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
-                        refresh(refreshFlag);
+                        refresh();
+                    }
+
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
+                })
+                .addExtraAction(new AnActionButton(Const.CONTINUE_REFRESH_TABLE, AllIcons.Toolwindows.ToolWindowRun) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        refreshing = !refreshing;
+                        e.getPresentation().setIcon(refreshing ? AllIcons.Actions.Pause : AllIcons.Toolwindows.ToolWindowRun);
+                        e.getPresentation().setText(refreshing ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
+
+                        toggleScheduledJob(refreshing);
                     }
 
                     @Override
@@ -124,14 +137,24 @@ public class StockWindow {
 
     }
 
-    public static void refresh(boolean refresh) {
-
-        System.out.println("refresh(): 刷新状态: " + refresh);
-
-        if (!refresh) {
+    public void toggleScheduledJob(boolean start) {
+        System.out.println("启停定时任务: " + start);
+        if (!start) {
             return;
         }
+        new Thread(() -> {
+            while (refreshing) {
+                refresh();
+                try {
+                    TimeUnit.SECONDS.sleep(5);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+    }
 
+    public static void refresh() {
         java.util.List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/StockConfig.json", new TypeReference<>() {
         });
 
@@ -156,7 +179,6 @@ public class StockWindow {
             String code = line.substring(line.indexOf("_") + 1, line.indexOf("="));
             String dataStr = line.substring(line.indexOf("=") + 2, line.length() - 2);
             String[] values = dataStr.split("~");
-
 
             StockDataBean stockDataBean = stockDataBeanMap.get(code);
             if (stockDataBean == null) {

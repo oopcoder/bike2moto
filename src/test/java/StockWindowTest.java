@@ -11,7 +11,7 @@ public class StockWindowTest {
 
     @Test
     public void testRefresh() {
-        StockWindow.refresh(true);
+        StockWindow.refresh();
     }
 
     @Test
