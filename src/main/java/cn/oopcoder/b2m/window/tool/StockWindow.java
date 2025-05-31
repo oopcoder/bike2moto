@@ -2,6 +2,7 @@ package cn.oopcoder.b2m.window.tool;
 
 import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
+import cn.oopcoder.b2m.config.GlobalConfig;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.utils.FileUtilTest;
 import cn.oopcoder.b2m.utils.HttpClientPool;
@@ -21,8 +22,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableModel;
@@ -173,18 +172,10 @@ public class StockWindow {
         // todo 从配置文件读取表头，初始化stockDataBean
 
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setColumnIdentifiers(tableColumns());
+        tableModel.setColumnIdentifiers(GlobalConfig.getInstance().getStockTableColumn(jbCheckBox.isSelected()));
 
         // 第一次刷新一下
         refresh();
-    }
-
-    public String[] tableColumns() {
-        return tableFieldInfo().stream().map(TableFieldInfo::displayName).toArray(String[]::new);
-    }
-
-    public List<TableFieldInfo> tableFieldInfo() {
-        return jbCheckBox.isSelected() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
     }
 
     public void toggleScheduledJob(boolean start) {
@@ -209,10 +200,9 @@ public class StockWindow {
 
         // 清空表格模型
         tableModel.setRowCount(0);
+        List<TableFieldInfo> fieldInfoList = GlobalConfig.getInstance().getStockTableFieldInfo(jbCheckBox.isSelected());
 
         for (Map.Entry<String, StockDataBean> entry : stockDataBeanMap.entrySet()) {
-
-            List<TableFieldInfo> fieldInfoList = tableFieldInfo();
 
             Vector<Object> v = new Vector<>(fieldInfoList.size());
             StockDataBean stockDataBean = entry.getValue();
