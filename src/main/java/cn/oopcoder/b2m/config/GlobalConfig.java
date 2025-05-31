@@ -12,8 +12,11 @@ import java.util.stream.Collectors;
 
 import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
+import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 import lombok.Data;
+
+import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
 
 /**
  * Created by oopcoder at 2025/5/31 9:42 .
@@ -37,6 +40,16 @@ public class GlobalConfig {
     private PropertiesComponent propertiesComponent = null;
 
     private volatile Config config;
+
+    private ShowMode showMode = Hidden;
+
+    public void setShowMode(ShowMode showMode) {
+        this.showMode = showMode;
+    }
+
+    private boolean isHiddenMode() {
+        return showMode == Hidden;
+    }
 
     public void refresh() {
         String configJson = propertiesComponent.getValue(GLOBAL_CONFIG_KEY);
@@ -65,30 +78,43 @@ public class GlobalConfig {
         config = null;
     }
 
+    /**
+     * @param tableColumn 隐藏模式 是隐藏名，正常模式 是正常中文名
+     */
     public GlobalConfig setStockTableColumn(List<String> tableColumn) {
-
         if (config == null) {
             config = new Config();
         }
-        config.setStockTableColumn(tableColumn);
+        // 要转成 真正的字段名
+        List<String> fieldNameList = new ArrayList<>();
+
+        List<TableFieldInfo> fieldInfoList = isHiddenMode() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
+        Map<String, TableFieldInfo> fieldInfoMap = fieldInfoList.stream()
+                .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
+
+        for (String fieldName : tableColumn) {
+            TableFieldInfo fieldInfo = fieldInfoMap.get(fieldName);
+            fieldNameList.add(fieldInfo.fieldName());
+        }
+        config.setStockTableColumn(fieldNameList);
         return this;
     }
 
-    public String[] getStockTableColumn(boolean hidden) {
-        return getStockTableFieldInfo(hidden).stream().map(TableFieldInfo::displayName).toArray(String[]::new);
+    public String[] getStockTableColumn() {
+        return getStockTableFieldInfo().stream().map(TableFieldInfo::displayName).toArray(String[]::new);
     }
 
-    public List<TableFieldInfo> getStockTableFieldInfo(boolean hidden) {
-        List<TableFieldInfo> fieldInfoList = hidden ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
+    public List<TableFieldInfo> getStockTableFieldInfo() {
+        List<TableFieldInfo> fieldInfoList = isHiddenMode() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
 
         if (config == null || config.getStockTableColumn() == null || config.getStockTableColumn().isEmpty()) {
             return fieldInfoList;
         }
 
-        // 排序
         Map<String, TableFieldInfo> map = fieldInfoList.stream()
                 .collect(Collectors.toMap(TableFieldInfo::fieldName, Function.identity()));
 
+        // 按配置文件排序，因为列的顺序可以变更过
         List<TableFieldInfo> result = new ArrayList<>();
         for (String fieldName : config.getStockTableColumn()) {
             TableFieldInfo fieldInfo = map.get(fieldName);

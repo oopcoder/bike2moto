@@ -4,6 +4,7 @@ import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.config.GlobalConfig;
 import cn.oopcoder.b2m.consts.Const;
+import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.FileUtilTest;
 import cn.oopcoder.b2m.utils.HttpClientPool;
 
@@ -16,14 +17,21 @@ import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
+import com.l.r.A;
 
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
@@ -31,10 +39,13 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseMotionListener;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -106,22 +117,66 @@ public class StockWindow {
         jbCheckBox = new JBCheckBox();
         jbCheckBox.setToolTipText("隐蔽模式");
         jbCheckBox.setSelected(true);
-
-        jbCheckBox.addActionListener(e -> initColumnIdentifiers());
+        jbCheckBox.addActionListener(e -> {
+            GlobalConfig.getInstance().setShowMode(jbCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
+            initColumnIdentifiers();
+        });
 
         toolbarDecorator.getActionsPanel().add(jbCheckBox, BorderLayout.WEST);
 
-        JTableHeader tableHeader = table.getTableHeader();
-        tableHeader.addMouseMotionListener(new MouseMotionAdapter() {
+        table.getColumnModel().addColumnModelListener(new TableColumnModelListener() {
             @Override
-            public void mouseDragged(MouseEvent e) {
-                StringBuilder tableHeadChange = new StringBuilder();
-                for (int i = 0; i < table.getColumnCount(); i++) {
-                    tableHeadChange.append(table.getColumnName(i)).append(",");
+            public void columnAdded(TableColumnModelEvent e) {
+                // Do nothing
+            }
+
+            @Override
+            public void columnRemoved(TableColumnModelEvent e) {
+                // Do nothing
+            }
+
+            @Override
+            public void columnMoved(TableColumnModelEvent e) {
+                if (e.getFromIndex() == e.getToIndex()) {
+                    return;
                 }
-                System.out.println("移动了列位置: " + tableHeadChange);
+                System.out.println("columnMoved(): " + e.getFromIndex() + " -> " + e.getToIndex());
+
+                TableColumnModel columnModel = (TableColumnModel) e.getSource();
+                Enumeration<TableColumn> columns = columnModel.getColumns();
+                Iterator<TableColumn> iterator = columns.asIterator();
+                List<String> list = new ArrayList<>(columnModel.getColumnCount());
+
+                while (iterator.hasNext()) {
+                    TableColumn column = iterator.next();
+                    System.out.println("column name: " + column.getHeaderValue());
+                    list.add((String) column.getHeaderValue());
+                }
+                GlobalConfig.getInstance().setStockTableColumn(list).persist();
+            }
+
+            @Override
+            public void columnMarginChanged(ChangeEvent e) {
+                // Do nothing
+            }
+
+            @Override
+            public void columnSelectionChanged(ListSelectionEvent e) {
+                // Do nothing
             }
         });
+
+        JTableHeader tableHeader = table.getTableHeader();
+        // tableHeader.addMouseMotionListener(new MouseMotionAdapter() {
+        //     @Override
+        //     public void mouseDragged(MouseEvent e) {
+        //         StringBuilder tableHeadChange = new StringBuilder();
+        //         for (int i = 0; i < table.getColumnCount(); i++) {
+        //             tableHeadChange.append(table.getColumnName(i)).append(",");
+        //         }
+        //         System.out.println("移动了列位置: " + tableHeadChange);
+        //     }
+        // });
 
         tableHeader.addMouseListener(new MouseAdapter() {
             @Override
@@ -172,7 +227,7 @@ public class StockWindow {
         // todo 从配置文件读取表头，初始化stockDataBean
 
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setColumnIdentifiers(GlobalConfig.getInstance().getStockTableColumn(jbCheckBox.isSelected()));
+        tableModel.setColumnIdentifiers(GlobalConfig.getInstance().getStockTableColumn());
 
         // 第一次刷新一下
         refresh();
@@ -200,7 +255,7 @@ public class StockWindow {
 
         // 清空表格模型
         tableModel.setRowCount(0);
-        List<TableFieldInfo> fieldInfoList = GlobalConfig.getInstance().getStockTableFieldInfo(jbCheckBox.isSelected());
+        List<TableFieldInfo> fieldInfoList = GlobalConfig.getInstance().getStockTableFieldInfo();
 
         for (Map.Entry<String, StockDataBean> entry : stockDataBeanMap.entrySet()) {
 
