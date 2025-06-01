@@ -29,7 +29,7 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 public class StockDataBean {
 
     // 隐蔽模式名，最好是英文
-    @TableColumn(name = "标识", order = 1, showMode = {Hidden}, hiddenModeName = "mask")
+    @TableColumn(name = "马赛克", order = 1, showMode = {Hidden}, hiddenModeName = "mask")
     private String maskName;
 
     @TableColumn(name = "别名", order = 2, showMode = {Normal})

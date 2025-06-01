@@ -51,6 +51,10 @@ public class GlobalConfig {
         return showMode == Hidden;
     }
 
+    public Config getConfig() {
+        return config;
+    }
+
     public void refresh() {
         String configJson = propertiesComponent.getValue(GLOBAL_CONFIG_KEY);
         if (StringUtils.isEmpty(configJson)) {
@@ -85,12 +89,11 @@ public class GlobalConfig {
         if (config == null) {
             config = new Config();
         }
+
+        Map<String, TableFieldInfo> fieldInfoMap = getStockDisplayNameMap();
+
         // 要转成 真正的字段名
         List<String> fieldNameList = new ArrayList<>();
-
-        List<TableFieldInfo> fieldInfoList = isHiddenMode() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
-        Map<String, TableFieldInfo> fieldInfoMap = fieldInfoList.stream()
-                .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
 
         for (String fieldName : tableColumn) {
             TableFieldInfo fieldInfo = fieldInfoMap.get(fieldName);
@@ -100,12 +103,25 @@ public class GlobalConfig {
         return this;
     }
 
-    public String[] getStockTableColumn() {
+    private List<TableFieldInfo> getDefaultStockTableFieldInfo() {
+        return isHiddenMode() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
+    }
+
+    public Map<String, TableFieldInfo> getStockDisplayNameMap() {
+        List<TableFieldInfo> fieldInfoList = getDefaultStockTableFieldInfo();
+        return fieldInfoList.stream()
+                .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
+    }
+
+    public String[] getStockDisplayName() {
         return getStockTableFieldInfo().stream().map(TableFieldInfo::displayName).toArray(String[]::new);
     }
 
-    public List<TableFieldInfo> getStockTableFieldInfo() {
-        List<TableFieldInfo> fieldInfoList = isHiddenMode() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
+    /**
+     * 按配置文件排序，因为列的顺序可以变更过
+     */
+    private List<TableFieldInfo> getStockTableFieldInfo() {
+        List<TableFieldInfo> fieldInfoList = getDefaultStockTableFieldInfo();
 
         if (config == null || config.getStockTableColumn() == null || config.getStockTableColumn().isEmpty()) {
             return fieldInfoList;

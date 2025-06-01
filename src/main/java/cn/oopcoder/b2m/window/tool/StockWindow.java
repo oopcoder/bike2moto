@@ -17,7 +17,6 @@ import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
-import com.l.r.A;
 
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
@@ -38,11 +37,11 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.event.MouseMotionListener;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -142,6 +141,7 @@ public class StockWindow {
                 }
                 System.out.println("columnMoved(): " + e.getFromIndex() + " -> " + e.getToIndex());
 
+                // 移动列，只会更改 TableColumn 的顺序，不会修改 我们通过 setColumnIdentifiers 设置的表头
                 TableColumnModel columnModel = (TableColumnModel) e.getSource();
                 Enumeration<TableColumn> columns = columnModel.getColumns();
                 Iterator<TableColumn> iterator = columns.asIterator();
@@ -227,7 +227,7 @@ public class StockWindow {
         // todo 从配置文件读取表头，初始化stockDataBean
 
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setColumnIdentifiers(GlobalConfig.getInstance().getStockTableColumn());
+        tableModel.setColumnIdentifiers(GlobalConfig.getInstance().getStockDisplayName());
 
         // 第一次刷新一下
         refresh();
@@ -255,7 +255,22 @@ public class StockWindow {
 
         // 清空表格模型
         tableModel.setRowCount(0);
-        List<TableFieldInfo> fieldInfoList = GlobalConfig.getInstance().getStockTableFieldInfo();
+
+        Map<String, TableFieldInfo> tableFieldInfoMap = GlobalConfig.getInstance().getStockDisplayNameMap();
+        TableColumnModel columnModel = table.getColumnModel();
+        Enumeration<TableColumn> columns = columnModel.getColumns();
+        Iterator<TableColumn> iterator = columns.asIterator();
+
+        List<TableColumn> columnList = new ArrayList<>();
+        while (iterator.hasNext()) {
+            TableColumn column = iterator.next();
+            columnList.add(column);
+        }
+        // 这里列的顺序可能变更过，恢复表头排序来取值
+        columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
+
+        List<TableFieldInfo> fieldInfoList = columnList.stream()
+                .map(t -> tableFieldInfoMap.get((String) t.getHeaderValue())).toList();
 
         for (Map.Entry<String, StockDataBean> entry : stockDataBeanMap.entrySet()) {
 
@@ -273,6 +288,8 @@ public class StockWindow {
 
         SwingUtilities.invokeLater(() -> refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
 
+        GlobalConfig.Config config = GlobalConfig.getInstance().getConfig();
+        System.out.println("refresh config : " + config);
     }
 
     public static Map<String, StockDataBean> getInitStockDataMap() {
