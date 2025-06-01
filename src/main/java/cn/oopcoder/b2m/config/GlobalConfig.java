@@ -47,7 +47,7 @@ public class GlobalConfig {
         this.showMode = showMode;
     }
 
-    private boolean isHiddenMode() {
+    public boolean isHiddenMode() {
         return showMode == Hidden;
     }
 
@@ -113,14 +113,10 @@ public class GlobalConfig {
                 .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
     }
 
-    public String[] getStockDisplayName() {
-        return getStockTableFieldInfo().stream().map(TableFieldInfo::displayName).toArray(String[]::new);
-    }
-
     /**
      * 按配置文件排序，因为列的顺序可以变更过
      */
-    private List<TableFieldInfo> getStockTableFieldInfo() {
+    public List<TableFieldInfo> getStockTableFieldInfoOrder() {
         List<TableFieldInfo> fieldInfoList = getDefaultStockTableFieldInfo();
 
         if (config == null || config.getStockTableColumn() == null || config.getStockTableColumn().isEmpty()) {

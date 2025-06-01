@@ -4,6 +4,7 @@ import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.intellij.ui.JBColor;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,11 +14,15 @@ import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.sisu.Hidden;
 
+import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static cn.oopcoder.b2m.consts.ColorHexConst.lightRed;
+import static cn.oopcoder.b2m.consts.ColorHexConst.softGreen;
 import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
 import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 
@@ -38,10 +43,12 @@ public class StockDataBean {
     @TableColumn(name = "当前价", order = 3, hiddenModeName = "now")
     private String currentPrice;
 
-    @TableColumn(name = "涨跌", order = 4, hiddenModeName = "up")
+    @TableColumn(name = "涨跌", order = 4, hiddenModeName = "up", foreground = {lightRed, softGreen},
+            hiddenModeForeground = {lightRed, softGreen})
     private String change;
 
-    @TableColumn(name = "涨跌幅", order = 5, hiddenModeName = "upp")
+    @TableColumn(name = "涨跌幅", order = 5, hiddenModeName = "upp", foreground = {lightRed, softGreen},
+            hiddenModeForeground = {lightRed, softGreen})
     private String changePercent;
 
     @TableColumn(name = "最高价", order = 6)
@@ -63,6 +70,8 @@ public class StockDataBean {
     public static List<TableFieldInfo> normalTableFields = getTableColumns(Normal);
 
     public static List<TableFieldInfo> getTableColumns(ShowMode showMode) {
+        boolean isHidden = Hidden == showMode;
+
         return Arrays.stream(StockDataBean.class.getDeclaredFields())
                 .filter(f -> {
                     if (!f.isAnnotationPresent(TableColumn.class)) {
@@ -73,11 +82,25 @@ public class StockDataBean {
                 })
                 .map(f -> {
                     TableColumn tc = f.getAnnotation(TableColumn.class);
-                    String displayName = Hidden == showMode ? tc.hiddenModeName() : tc.name();
+                    String displayName = isHidden ? tc.hiddenModeName() : tc.name();
                     if (StringUtils.isEmpty(displayName)) {
                         displayName = f.getName();
                     }
-                    return new TableFieldInfo(f.getName(), displayName, tc.order());
+
+                    String[] foreground = isHidden ? tc.hiddenModeForeground() : tc.foreground();
+                    List<Color> displayColor = new ArrayList<>();
+                    if (foreground != null && foreground.length > 0) {
+                        for (String color : foreground) {
+                            if (StringUtils.isEmpty(color)) {
+                                displayColor.add(null);
+                            } else {
+                                displayColor.add(JBColor.decode(color));
+                            }
+                        }
+                        // displayColor = Arrays.stream(foreground).map(Color::decode).collect(Collectors.toList());
+                    }
+
+                    return new TableFieldInfo(f.getName(), displayName, displayColor, tc.order());
                 })
                 .sorted(Comparator.comparingInt(TableFieldInfo::order))
                 .collect(Collectors.toList());

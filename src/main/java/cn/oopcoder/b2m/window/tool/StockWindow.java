@@ -7,18 +7,21 @@ import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.FileUtilTest;
 import cn.oopcoder.b2m.utils.HttpClientPool;
+import cn.oopcoder.b2m.utils.NumUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.AnActionButton;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.codehaus.stax2.ri.typed.NumberUtil;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -27,8 +30,10 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
@@ -47,6 +52,8 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -223,11 +230,49 @@ public class StockWindow {
     }
 
     private void initColumnIdentifiers() {
-
-        // todo 从配置文件读取表头，初始化stockDataBean
-
+        List<TableFieldInfo> stockTableFieldInfo = GlobalConfig.getInstance().getStockTableFieldInfoOrder();
+        String[] stockTableColumn = stockTableFieldInfo.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setColumnIdentifiers(GlobalConfig.getInstance().getStockDisplayName());
+        tableModel.setColumnIdentifiers(stockTableColumn);
+
+        List<TableFieldInfo> colorTableFieldInfo = stockTableFieldInfo.stream()
+                .filter(tableFieldInfo -> !tableFieldInfo.displayColor().isEmpty()).toList();
+
+        for (TableFieldInfo tableFieldInfo : colorTableFieldInfo) {
+            TableColumn tableColumn = table.getColumn(tableFieldInfo.displayName());
+            tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
+                @Override
+                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                        boolean hasFocus, int row, int column) {
+                    double doubleValue = NumUtil.toDouble(Objects.toString(value).replace("%", ""));
+
+                    List<Color> colors = tableFieldInfo.displayColor();
+                    if (doubleValue > 0 && colors.size() > 0) {
+                        // 涨
+                        Color color = colors.get(0);
+                        if (color != null) {
+                            setForeground(JBColor.RED);
+                        }
+                    } else if (doubleValue < 0 && colors.size() > 1) {
+                        // 跌
+                        Color color = colors.get(1);
+                        if (color != null) {
+                            setForeground(JBColor.GREEN);
+                        }
+                    } else if (doubleValue == 0 && colors.size() > 2) {
+                        // 平
+                        Color color = colors.get(2);
+                        if (color != null) {
+                            setForeground(color);
+                        }
+                    } else {
+                        // 正常不会出现，除非没有配置或者bug
+                        setForeground(getForeground());
+                    }
+                    return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                }
+            });
+        }
 
         // 第一次刷新一下
         refresh();
