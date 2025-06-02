@@ -1,6 +1,8 @@
 import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
+import cn.oopcoder.b2m.config.GlobalConfig;
 import cn.oopcoder.b2m.enums.ShowMode;
+import cn.oopcoder.b2m.utils.StockDataUtil;
 import cn.oopcoder.b2m.window.tool.StockWindow;
 import org.junit.Test;
 
@@ -12,8 +14,8 @@ public class StockWindowTest {
 
     @Test
     public void testGetStockData() {
-        Map<String, StockDataBean> stockDataMap = StockWindow.getInitStockDataMap();
-        StockWindow.updateStockData(stockDataMap);
+        Map<String, StockDataBean> stockDataMap = GlobalConfig.getInstance().getStockDataBeanMap();
+        StockDataUtil.updateStockData(stockDataMap);
     }
 
     @Test

@@ -1,24 +1,21 @@
 package cn.oopcoder.b2m.window.tool;
 
-import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.config.GlobalConfig;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
-import cn.oopcoder.b2m.utils.HttpClientPool;
-import cn.oopcoder.b2m.utils.NumUtil;
+import cn.oopcoder.b2m.table.StockTableModel;
+import cn.oopcoder.b2m.table.TableFieldInfoModel;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.AnActionButton;
-import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,30 +28,20 @@ import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
 
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.lang.invoke.VarHandle;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Vector;
-import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class StockWindow {
 
@@ -66,8 +53,7 @@ public class StockWindow {
     public volatile Integer tableHeaderCount;
     public volatile Integer tableHeaderColumnIndex;
     private volatile boolean refreshing = false;
-    private DefaultTableModel tableModel;
-    private Map<String, StockDataBean> stockDataBeanMap;
+    private StockTableModel tableModel;
 
     public StockWindow() {
         createUI();
@@ -76,14 +62,16 @@ public class StockWindow {
     }
 
     private void createUI() {
-        tableModel = new DefaultTableModel();
-        table = new JBTable(tableModel);
+        table = new JBTable();
+
+        tableModel = new StockTableModel(table);
+        table.setModel(tableModel);
 
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator.addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
-                        refresh();
+                        refreshModel();
                     }
 
                     @Override
@@ -144,18 +132,12 @@ public class StockWindow {
                 }
                 System.out.println("columnMoved(): " + e.getFromIndex() + " -> " + e.getToIndex());
 
-                // 移动列，只会更改 TableColumn 的顺序，不会修改 我们通过 setColumnIdentifiers 设置的表头
-                TableColumnModel columnModel = (TableColumnModel) e.getSource();
-                Enumeration<TableColumn> columns = columnModel.getColumns();
-                Iterator<TableColumn> iterator = columns.asIterator();
-                List<String> list = new ArrayList<>(columnModel.getColumnCount());
+                // 移动列，只会更改 TableColumn 的顺序，不会修改我们通过 setColumnIdentifiers 设置的表头
 
-                while (iterator.hasNext()) {
-                    TableColumn column = iterator.next();
-                    System.out.println("column name: " + column.getHeaderValue());
-                    list.add((String) column.getHeaderValue());
-                }
-                GlobalConfig.getInstance().setStockTableColumn(list).persist();
+                List<String> displayNames = tableModel.getTableColumns().stream()
+                        .map(tableColumn -> (String) tableColumn.getHeaderValue())
+                        .collect(Collectors.toList());
+                GlobalConfig.getInstance().setStockTableColumn(displayNames).persist();
             }
 
             @Override
@@ -215,18 +197,16 @@ public class StockWindow {
                 if (e.getColumn() < 0) {
                     return;
                 }
-                DefaultTableModel tableModel = (DefaultTableModel) e.getSource();
-                String columnName = tableModel.getColumnName(e.getColumn());
-                if (StringUtils.isEmpty(columnName)) {
+                TableFieldInfoModel tableModel = (TableFieldInfoModel) e.getSource();
+                TableFieldInfo fieldInfo = tableModel.getTableFieldInfo(e.getColumn());
+                if (fieldInfo == null) {
                     return;
                 }
-
-                Map<String, TableFieldInfo> tableFieldInfoMap = GlobalConfig.getInstance().getStockDisplayNameMap();
-                TableFieldInfo fieldInfo = tableFieldInfoMap.get(columnName);
                 if (e.getType() == TableModelEvent.UPDATE) {
                     if (fieldInfo.editable()) {
                         int row = e.getFirstRow();
                         int column = e.getColumn();
+                        // todo
                         System.out.println("单元格修改: 行 " + row + ", 列 " + column);
                     }
                 } else if (e.getType() == TableModelEvent.INSERT) {
@@ -246,7 +226,7 @@ public class StockWindow {
             @Override
             public void editingStopped(ChangeEvent e) {
                 // 可以在这里获取编辑后的值
-                System.out.println("单元格修改"  );
+                System.out.println("单元格修改");
             }
 
             @Override
@@ -258,74 +238,18 @@ public class StockWindow {
     }
 
     private void initData() {
-        stockDataBeanMap = GlobalConfig.getInstance().getStockDataBeanMap();
+        tableModel.setStockDataBeanMap(GlobalConfig.getInstance().getStockDataBeanMap());
 
         List<TableFieldInfo> stockTableFieldInfo = GlobalConfig.getInstance().getStockTableFieldInfoOrder();
-        String[] stockTableColumn = stockTableFieldInfo.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
+
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        ((DefaultTableModel) table.getModel()).setColumnIdentifiers(stockTableColumn);
+        tableModel.setTableFieldInfo(stockTableFieldInfo);
 
-        List<TableFieldInfo> colorTableFieldInfo = stockTableFieldInfo.stream()
-                .filter(tableFieldInfo -> !tableFieldInfo.displayColor().isEmpty()).toList();
-
-        for (TableFieldInfo tableFieldInfo : colorTableFieldInfo) {
-            TableColumn tableColumn = table.getColumn(tableFieldInfo.displayName());
-            tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
-                @Override
-                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                        boolean hasFocus, int row, int column) {
-
-                    double doubleValue = NumUtil.toDouble(Objects.toString(value).replace("%", ""));
-
-                    List<Color> colors = tableFieldInfo.displayColor();
-                    if (doubleValue > 0 && colors.size() > 0) {
-                        // 涨
-                        Color color = colors.get(0);
-                        if (color != null) {
-                            setForeground(JBColor.RED);
-                        }
-                    } else if (doubleValue < 0 && colors.size() > 1) {
-                        // 跌
-                        Color color = colors.get(1);
-                        if (color != null) {
-                            setForeground(JBColor.GREEN);
-                        }
-                    } else if (doubleValue == 0 && colors.size() > 2) {
-                        // 平
-                        Color color = colors.get(2);
-                        if (color != null) {
-                            setForeground(color);
-                        }
-                    } else {
-                        // 正常不会出现，除非没有配置或者bug
-                        setForeground(getForeground());
-                    }
-                    return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                }
-            });
-        }
-
-        TableRowSorter<TableModel> sorter = new TableRowSorter<>(table.getModel());
-
-        Comparator<Object> doubleComparator = (o1, o2) -> {
-            Double v1 = NumUtil.toDouble(Objects.toString(o1).replace("%", ""));
-            Double v2 = NumUtil.toDouble(Objects.toString(o2).replace("%", ""));
-            return v1.compareTo(v2);
-        };
-
-        // 有些字符串字段 要转成 数字进行排序
-        for (int i = 0; i < stockTableFieldInfo.size(); i++) {
-            TableFieldInfo tableFieldInfo = stockTableFieldInfo.get(i);
-            if (tableFieldInfo.enableNumberComparator()) {
-                sorter.setComparator(i, doubleComparator);
-            }
-        }
-
-        // 设置了排序器，点击表头才可以排序
-        table.setRowSorter(sorter);
+        // 配置排序器
+        tableModel.configRowSorter();
 
         // 第一次刷新一下
-        refresh();
+        refreshModel();
     }
 
     public void toggleScheduledJob(boolean start) {
@@ -335,7 +259,7 @@ public class StockWindow {
         }
         new Thread(() -> {
             while (refreshing) {
-                refresh();
+                refreshModel();
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
@@ -345,91 +269,9 @@ public class StockWindow {
         }).start();
     }
 
-    public void refresh() {
-        updateStockData(stockDataBeanMap);
-
-        // 清空表格模型
-        ((DefaultTableModel) table.getModel()).setRowCount(0);
-
-        Map<String, TableFieldInfo> tableFieldInfoMap = GlobalConfig.getInstance().getStockDisplayNameMap();
-        TableColumnModel columnModel = table.getColumnModel();
-        Enumeration<TableColumn> columns = columnModel.getColumns();
-        Iterator<TableColumn> iterator = columns.asIterator();
-
-        List<TableColumn> columnList = new ArrayList<>();
-        while (iterator.hasNext()) {
-            TableColumn column = iterator.next();
-            columnList.add(column);
-        }
-        // 这里列的顺序可能变更过，恢复表头排序来取值
-        columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
-
-        List<TableFieldInfo> fieldInfoList = columnList.stream()
-                .map(t -> tableFieldInfoMap.get((String) t.getHeaderValue())).toList();
-
-        stockDataBeanMap.values().stream()
-                .sorted(Comparator.comparing(StockDataBean::getIndex, new Comparator<Integer>() {
-                    @Override
-                    public int compare(Integer o1, Integer o2) {
-                        return o2.compareTo(o1);
-                    }
-                }))// 默认排序
-                .forEach(new Consumer<StockDataBean>() {
-                    @Override
-                    public void accept(StockDataBean stockDataBean) {
-                        Vector<Object> v = new Vector<>(fieldInfoList.size());
-
-                        for (TableFieldInfo fieldInfo : fieldInfoList) {
-                            String fieldName = fieldInfo.fieldName();
-                            v.addElement(stockDataBean.getFieldValue(fieldName));
-                        }
-                        ((DefaultTableModel) table.getModel()).addRow(v);
-                    }
-                });
-        ((DefaultTableModel) table.getModel()).fireTableRowsUpdated(0, table.getModel().getRowCount() - 1);
-
+    public void refreshModel() {
+        tableModel.refresh();
         SwingUtilities.invokeLater(() -> refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
-
     }
 
-    public static void updateStockData(Map<String, StockDataBean> stockDataBeanMap) {
-
-        String codes = String.join(",", stockDataBeanMap.keySet());
-
-        try {
-            String result = HttpClientPool.getHttpClient().get("http://qt.gtimg.cn/q=" + codes);
-
-            String[] lines = result.split("\n");
-            for (String line : lines) {
-                String code = line.substring(line.indexOf("_") + 1, line.indexOf("="));
-                String dataStr = line.substring(line.indexOf("=") + 2, line.length() - 2);
-                String[] values = dataStr.split("~");
-
-                StockDataBean stockDataBean = stockDataBeanMap.get(code);
-                if (stockDataBean == null) {
-                    continue;
-                }
-
-                stockDataBean.setName(values[1]);
-                stockDataBean.setChange(values[31]);
-                stockDataBean.setChangePercent(values[32]);
-                try {
-                    Date date = new SimpleDateFormat("yyyyMMddHHmmss").parse(values[30]);
-                    stockDataBean.setTime(DateFormatUtils.format(date, "HH:mm:ss"));
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    stockDataBean.setTime(values[30]);
-                }
-
-                stockDataBean.setCurrentPrice(values[3]);
-                stockDataBean.setHigh(values[33]);// 33
-                stockDataBean.setLow(values[34]);// 34
-
-                System.out.println("parse(): " + stockDataBean);
-
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

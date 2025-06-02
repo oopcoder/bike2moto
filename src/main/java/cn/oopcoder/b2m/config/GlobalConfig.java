@@ -85,20 +85,23 @@ public class GlobalConfig {
     }
 
     /**
-     * @param tableColumn 隐藏模式 是隐藏名，正常模式 是正常中文名
+     * @param displayNames 隐藏模式 是隐藏名，正常模式 是正常中文名
      */
-    public GlobalConfig setStockTableColumn(List<String> tableColumn) {
+    public GlobalConfig setStockTableColumn(List<String> displayNames) {
         if (config == null) {
             config = new Config();
         }
 
-        Map<String, TableFieldInfo> fieldInfoMap = getStockDisplayNameMap();
+        List<TableFieldInfo> fieldInfoList = getDefaultStockTableFieldInfo();
+
+        Map<String, TableFieldInfo> fieldInfoMap = fieldInfoList.stream()
+                .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
 
         // 要转成 真正的字段名
         List<String> fieldNameList = new ArrayList<>();
 
-        for (String fieldName : tableColumn) {
-            TableFieldInfo fieldInfo = fieldInfoMap.get(fieldName);
+        for (String displayName : displayNames) {
+            TableFieldInfo fieldInfo = fieldInfoMap.get(displayName);
             fieldNameList.add(fieldInfo.fieldName());
         }
         config.setStockTableColumn(fieldNameList);
@@ -135,12 +138,6 @@ public class GlobalConfig {
 
     private List<TableFieldInfo> getDefaultStockTableFieldInfo() {
         return isHiddenMode() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
-    }
-
-    public Map<String, TableFieldInfo> getStockDisplayNameMap() {
-        List<TableFieldInfo> fieldInfoList = getDefaultStockTableFieldInfo();
-        return fieldInfoList.stream()
-                .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
     }
 
     /**
