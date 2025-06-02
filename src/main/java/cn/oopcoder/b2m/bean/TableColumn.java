@@ -33,4 +33,8 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 
     // 隐藏模式下列前景色, 涨 跌 平
     String[] hiddenModeForeground() default {};
+
+    // 启用数值比较器，涨跌字段是字符串类型，需要转换成数值进行比较
+    boolean enableNumberComparator() default false;
+
 }

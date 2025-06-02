@@ -21,6 +21,7 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.codehaus.stax2.ri.typed.NumberUtil;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -76,9 +77,6 @@ public class StockWindow {
     private void createUI() {
         tableModel = new DefaultTableModel();
         table = new JBTable(tableModel);
-
-        TableRowSorter<TableModel> sorter = new TableRowSorter<>(tableModel);
-        table.setRowSorter(sorter);
 
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator.addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
@@ -270,6 +268,25 @@ public class StockWindow {
                 }
             });
         }
+
+        TableRowSorter<TableModel> sorter = new TableRowSorter<>(tableModel);
+
+        Comparator<Object> doubleComparator = (o1, o2) -> {
+            Double v1 = NumUtil.toDouble(Objects.toString(o1).replace("%", ""));
+            Double v2 = NumUtil.toDouble(Objects.toString(o2).replace("%", ""));
+            return v1.compareTo(v2);
+        };
+
+        // 有些字符串字段 要转成 数字进行排序
+        for (int i = 0; i < stockTableFieldInfo.size(); i++) {
+            TableFieldInfo tableFieldInfo = stockTableFieldInfo.get(i);
+            if (tableFieldInfo.enableNumberComparator()) {
+                sorter.setComparator(i, doubleComparator);
+            }
+        }
+
+        // 设置了排序器，点击表头才可以排序
+        table.setRowSorter(sorter);
 
         // 第一次刷新一下
         refresh();

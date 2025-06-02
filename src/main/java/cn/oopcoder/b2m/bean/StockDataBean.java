@@ -40,21 +40,21 @@ public class StockDataBean {
     @TableColumn(name = "别名", order = 15, showMode = {Normal})
     private String alias;
 
-    @TableColumn(name = "当前价", order = 20, hiddenModeName = "now")
+    @TableColumn(name = "当前价", order = 20, hiddenModeName = "now", enableNumberComparator = true)
     private String currentPrice;
 
-    @TableColumn(name = "涨跌", order = 25, hiddenModeName = "up", foreground = {lightRed, softGreen},
-            hiddenModeForeground = {lightRed, softGreen})
+    @TableColumn(name = "涨跌", order = 25, hiddenModeName = "up", enableNumberComparator = true,
+            foreground = {lightRed, softGreen}, hiddenModeForeground = {lightRed, softGreen})
     private String change;
 
-    @TableColumn(name = "涨跌幅", order = 30, hiddenModeName = "upp", foreground = {lightRed, softGreen},
-            hiddenModeForeground = {lightRed, softGreen})
+    @TableColumn(name = "涨跌幅", order = 30, hiddenModeName = "upp", enableNumberComparator = true,
+            foreground = {lightRed, softGreen}, hiddenModeForeground = {lightRed, softGreen})
     private String changePercent;
 
-    @TableColumn(name = "最高价", order = 35)
+    @TableColumn(name = "最高价", order = 35, enableNumberComparator = true)
     private String high;
 
-    @TableColumn(name = "最低价", order = 40)
+    @TableColumn(name = "最低价", order = 40, enableNumberComparator = true)
     private String low;
 
     @TableColumn(name = "代码", order = 45)
@@ -100,10 +100,8 @@ public class StockDataBean {
                                 displayColor.add(JBColor.decode(color));
                             }
                         }
-                        // displayColor = Arrays.stream(foreground).map(Color::decode).collect(Collectors.toList());
                     }
-
-                    return new TableFieldInfo(f.getName(), displayName, displayColor, tc.order());
+                    return new TableFieldInfo(f.getName(), displayName, displayColor, tc.order(), tc.enableNumberComparator());
                 })
                 .sorted(Comparator.comparingInt(TableFieldInfo::order))
                 .collect(Collectors.toList());
