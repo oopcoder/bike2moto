@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.enums.ShowMode;
-import cn.oopcoder.b2m.utils.FileUtilTest;
+import cn.oopcoder.b2m.utils.FileUtil;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 import lombok.Data;
 
@@ -117,7 +117,10 @@ public class GlobalConfig {
     }
 
     private Map<String, StockDataBean> getDefaultStockDataBeanMap() {
-        List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/DefaultStockConfig.json", new TypeReference<>() {
+        String json = FileUtil.readString("config/DefaultStockConfig.json");
+        setStockConfig(json).persist();
+
+        List<StockDataBean> stockDataBeanList = JacksonUtil.fromJson(json, new TypeReference<>() {
         });
         return stockDataBeanList.stream()
                 .collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));

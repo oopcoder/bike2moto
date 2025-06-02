@@ -125,6 +125,18 @@ public class StockDataBean {
         return null;
     }
 
+    public void setFieldValue(String fieldName, String value) {
+        // 使用反射获取属性值
+        try {
+            java.lang.reflect.Field field = StockDataBean.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(this, value);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     @Override
     public String toString() {
         return JacksonUtil.toJson(this);

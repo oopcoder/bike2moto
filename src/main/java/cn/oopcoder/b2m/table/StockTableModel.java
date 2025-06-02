@@ -70,10 +70,22 @@ public class StockTableModel extends TableFieldInfoModel {
                             String fieldName = fieldInfo.fieldName();
                             v.addElement(stockDataBean.getFieldValue(fieldName));
                         }
-                        ((TableFieldInfoModel) table.getModel()).addRow(v);
+                        addRow(v);
                     }
                 });
-        ((TableFieldInfoModel) table.getModel()).fireTableRowsUpdated(0, table.getModel().getRowCount() - 1);
+        fireTableRowsUpdated(0, table.getModel().getRowCount() - 1);
     }
 
+    public void setValueAt(Object aValue, int row, int column) {
+        super.setValueAt(aValue, row, column);
+        @SuppressWarnings("unchecked")
+        Vector<Object> rowVector = dataVector.elementAt(row);
+        int codeIndex = columnNameList.indexOf("code");
+        Object o = rowVector.elementAt(codeIndex);
+        System.out.println("setValueAt(): ");
+
+
+        // todo 持久化
+        stockDataBeanMap.get((String) o).setFieldValue(tableFieldInfoList.get(column).fieldName(), String.valueOf(aValue));
+    }
 }

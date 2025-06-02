@@ -32,10 +32,11 @@ import cn.oopcoder.b2m.utils.NumUtil;
 
 public class TableFieldInfoModel extends DefaultTableModel {
 
-    JBTable table;
-    List<TableFieldInfo> tableFieldInfoList;
-    Map<String, TableFieldInfo> columnNameMap;
-    List<String> columnNameList;
+    protected JBTable table;
+    protected List<TableFieldInfo> tableFieldInfoList;
+    protected Map<String, TableFieldInfo> columnNameMap;
+    protected Map<String, TableFieldInfo> fieldNameMap;
+    protected List<String> columnNameList;
 
     public TableFieldInfoModel(JBTable table) {
         this.table = table;
@@ -45,7 +46,10 @@ public class TableFieldInfoModel extends DefaultTableModel {
         this.tableFieldInfoList = tableFieldInfoList;
         this.columnNameMap = tableFieldInfoList.stream()
                 .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
-        this.columnNameList = tableFieldInfoList.stream().map(TableFieldInfo::displayName).collect(Collectors.toList());
+        this.fieldNameMap = tableFieldInfoList.stream()
+                .collect(Collectors.toMap(TableFieldInfo::fieldName, Function.identity()));
+        this.columnNameList = tableFieldInfoList.stream()
+                .map(TableFieldInfo::displayName).collect(Collectors.toList());
         setColumnIdentifiers(columnNameList.toArray());
 
         List<TableFieldInfo> colorTableFieldInfo = tableFieldInfoList.stream()
@@ -54,6 +58,7 @@ public class TableFieldInfoModel extends DefaultTableModel {
         for (TableFieldInfo tableFieldInfo : colorTableFieldInfo) {
 
             TableColumn tableColumn = table.getColumn(tableFieldInfo.displayName());
+
             tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
@@ -130,5 +135,11 @@ public class TableFieldInfoModel extends DefaultTableModel {
 
         // 设置了排序器，点击表头才可以排序
         table.setRowSorter(sorter);
+    }
+
+    @Override
+    public boolean isCellEditable(int row, int column) {
+        TableFieldInfo fieldInfo = tableFieldInfoList.get(column);
+        return fieldInfo.editable();
     }
 }

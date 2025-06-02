@@ -197,7 +197,7 @@ public class StockWindow {
                 if (e.getColumn() < 0) {
                     return;
                 }
-                TableFieldInfoModel tableModel = (TableFieldInfoModel) e.getSource();
+                StockTableModel tableModel = (StockTableModel) e.getSource();
                 TableFieldInfo fieldInfo = tableModel.getTableFieldInfo(e.getColumn());
                 if (fieldInfo == null) {
                     return;
@@ -206,7 +206,7 @@ public class StockWindow {
                     if (fieldInfo.editable()) {
                         int row = e.getFirstRow();
                         int column = e.getColumn();
-                        // todo
+                        // todo 找到 该行的 code，最该map对应的值
                         System.out.println("单元格修改: 行 " + row + ", 列 " + column);
                     }
                 } else if (e.getType() == TableModelEvent.INSERT) {
