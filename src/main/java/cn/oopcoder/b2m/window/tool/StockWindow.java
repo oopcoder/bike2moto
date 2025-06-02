@@ -21,7 +21,6 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.codehaus.stax2.ri.typed.NumberUtil;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -33,7 +32,6 @@ import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
@@ -45,7 +43,6 @@ import java.awt.event.MouseEvent;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
@@ -53,9 +50,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -317,18 +314,25 @@ public class StockWindow {
         List<TableFieldInfo> fieldInfoList = columnList.stream()
                 .map(t -> tableFieldInfoMap.get((String) t.getHeaderValue())).toList();
 
-        for (Map.Entry<String, StockDataBean> entry : stockDataBeanMap.entrySet()) {
+        stockDataBeanMap.values().stream()
+                .sorted(Comparator.comparing(StockDataBean::getIndex, new Comparator<Integer>() {
+                    @Override
+                    public int compare(Integer o1, Integer o2) {
+                        return o2.compareTo(o1);
+                    }
+                }))// 默认排序
+                .forEach(new Consumer<StockDataBean>() {
+                    @Override
+                    public void accept(StockDataBean stockDataBean) {
+                        Vector<Object> v = new Vector<>(fieldInfoList.size());
 
-            Vector<Object> v = new Vector<>(fieldInfoList.size());
-            StockDataBean stockDataBean = entry.getValue();
-
-            for (TableFieldInfo fieldInfo : fieldInfoList) {
-                String fieldName = fieldInfo.fieldName();
-                v.addElement(stockDataBean.getFieldValue(fieldName));
-            }
-
-            tableModel.addRow(v);
-        }
+                        for (TableFieldInfo fieldInfo : fieldInfoList) {
+                            String fieldName = fieldInfo.fieldName();
+                            v.addElement(stockDataBean.getFieldValue(fieldName));
+                        }
+                        tableModel.addRow(v);
+                    }
+                });
         tableModel.fireTableRowsUpdated(0, tableModel.getRowCount() - 1);
 
         SwingUtilities.invokeLater(() -> refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
@@ -338,7 +342,7 @@ public class StockWindow {
     }
 
     public static Map<String, StockDataBean> getInitStockDataMap() {
-        List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/StockConfig.json", new TypeReference<>() {
+        List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/DefaultStockConfig.json", new TypeReference<>() {
         });
 
         return stockDataBeanList.stream()

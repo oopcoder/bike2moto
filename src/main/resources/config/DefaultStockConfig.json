@@ -2,12 +2,14 @@
   {
     "code": "sz300059",
     "maskName": "dc",
-    "alias": "富"
+    "alias": "富",
+    "index": 10
   },
   {
     "code": "sh513090",
     "maskName": "xgzq",
-    "alias": "港"
+    "alias": "港",
+    "index": 15
   },
   {
     "code": "sz002195",

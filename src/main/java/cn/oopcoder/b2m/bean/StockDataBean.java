@@ -34,36 +34,39 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 public class StockDataBean {
 
     // 隐蔽模式名，最好是英文
-    @TableColumn(name = "马赛克", order = 1, showMode = {Hidden}, hiddenModeName = "mask")
+    @TableColumn(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask")
     private String maskName;
 
-    @TableColumn(name = "别名", order = 2, showMode = {Normal})
+    @TableColumn(name = "别名", order = 15, showMode = {Normal})
     private String alias;
 
-    @TableColumn(name = "当前价", order = 3, hiddenModeName = "now")
+    @TableColumn(name = "当前价", order = 20, hiddenModeName = "now")
     private String currentPrice;
 
-    @TableColumn(name = "涨跌", order = 4, hiddenModeName = "up", foreground = {lightRed, softGreen},
+    @TableColumn(name = "涨跌", order = 25, hiddenModeName = "up", foreground = {lightRed, softGreen},
             hiddenModeForeground = {lightRed, softGreen})
     private String change;
 
-    @TableColumn(name = "涨跌幅", order = 5, hiddenModeName = "upp", foreground = {lightRed, softGreen},
+    @TableColumn(name = "涨跌幅", order = 30, hiddenModeName = "upp", foreground = {lightRed, softGreen},
             hiddenModeForeground = {lightRed, softGreen})
     private String changePercent;
 
-    @TableColumn(name = "最高价", order = 6)
+    @TableColumn(name = "最高价", order = 35)
     private String high;
 
-    @TableColumn(name = "最低价", order = 10)
+    @TableColumn(name = "最低价", order = 40)
     private String low;
 
-    @TableColumn(name = "代码", order = 11)
+    @TableColumn(name = "代码", order = 45)
     private String code;
 
-    @TableColumn(name = "名称", order = 12, showMode = {Normal})
+    @TableColumn(name = "排序", order = 50)
+    private int index = 0;
+
+    @TableColumn(name = "名称", order = 55, showMode = {Normal})
     private String name;
 
-    @TableColumn(name = "时间", order = 13, showMode = {Normal})
+    @TableColumn(name = "时间", order = 60, showMode = {Normal})
     private String time;
 
     public static List<TableFieldInfo> hiddenTableFields = getTableColumns(Hidden);
