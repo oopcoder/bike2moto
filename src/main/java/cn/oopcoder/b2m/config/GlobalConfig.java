@@ -1,5 +1,6 @@
 package cn.oopcoder.b2m.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.ide.util.PropertiesComponent;
 
 import org.apache.commons.lang3.StringUtils;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.enums.ShowMode;
+import cn.oopcoder.b2m.utils.FileUtilTest;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 import lombok.Data;
 
@@ -103,6 +105,34 @@ public class GlobalConfig {
         return this;
     }
 
+    public GlobalConfig setStockConfig(String stockConfig) {
+        if (config == null) {
+            config = new Config();
+        }
+        config.setStockConfig(stockConfig);
+        return this;
+    }
+
+    private Map<String, StockDataBean> getDefaultStockDataBeanMap() {
+        List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/DefaultStockConfig.json", new TypeReference<>() {
+        });
+        return stockDataBeanList.stream()
+                .collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
+    }
+
+    public Map<String, StockDataBean> getStockDataBeanMap() {
+        if (config == null || StringUtils.isEmpty(config.getStockConfig())) {
+            return getDefaultStockDataBeanMap();
+        }
+        List<StockDataBean> stockDataBeanList = JacksonUtil.fromJson(config.getStockConfig(), new TypeReference<>() {
+        });
+        if (stockDataBeanList == null) {
+            return getDefaultStockDataBeanMap();
+        }
+        return stockDataBeanList.stream()
+                .collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
+    }
+
     private List<TableFieldInfo> getDefaultStockTableFieldInfo() {
         return isHiddenMode() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
     }
@@ -143,6 +173,8 @@ public class GlobalConfig {
     public static class Config {
 
         List<String> stockTableColumn;
+
+        String stockConfig;
     }
 
 }

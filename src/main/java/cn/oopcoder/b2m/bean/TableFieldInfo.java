@@ -8,7 +8,7 @@ import java.awt.Color;
 import java.util.List;
 
 public record TableFieldInfo(String fieldName, String displayName, List<Color> displayColor, int order,
-                             boolean enableNumberComparator) {
+                             boolean enableNumberComparator, boolean editable) {
 
     @Override
     public @NotNull String toString() {

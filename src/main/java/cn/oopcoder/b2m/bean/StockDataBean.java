@@ -34,10 +34,10 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 public class StockDataBean {
 
     // 隐蔽模式名，最好是英文
-    @TableColumn(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask")
+    @TableColumn(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask", editable = true)
     private String maskName;
 
-    @TableColumn(name = "别名", order = 15, showMode = {Normal})
+    @TableColumn(name = "别名", order = 15, showMode = {Normal}, editable = true)
     private String alias;
 
     @TableColumn(name = "当前价", order = 20, hiddenModeName = "now", enableNumberComparator = true)
@@ -57,10 +57,10 @@ public class StockDataBean {
     @TableColumn(name = "最低价", order = 40, enableNumberComparator = true)
     private String low;
 
-    @TableColumn(name = "代码", order = 45)
+    @TableColumn(name = "代码", order = 45, editable = true)
     private String code;
 
-    @TableColumn(name = "排序", order = 50)
+    @TableColumn(name = "排序", order = 50, editable = true)
     private int index = 0;
 
     @TableColumn(name = "名称", order = 55, showMode = {Normal})
@@ -101,7 +101,8 @@ public class StockDataBean {
                             }
                         }
                     }
-                    return new TableFieldInfo(f.getName(), displayName, displayColor, tc.order(), tc.enableNumberComparator());
+                    return new TableFieldInfo(f.getName(), displayName, displayColor, tc.order(),
+                            tc.enableNumberComparator(), tc.editable());
                 })
                 .sorted(Comparator.comparingInt(TableFieldInfo::order))
                 .collect(Collectors.toList());

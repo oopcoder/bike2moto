@@ -37,4 +37,7 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
     // 启用数值比较器，涨跌字段是字符串类型，需要转换成数值进行比较
     boolean enableNumberComparator() default false;
 
+    // 是否可修改
+    boolean editable() default false;
+
 }

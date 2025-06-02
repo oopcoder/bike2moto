@@ -5,11 +5,9 @@ import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.config.GlobalConfig;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
-import cn.oopcoder.b2m.utils.FileUtilTest;
 import cn.oopcoder.b2m.utils.HttpClientPool;
 import cn.oopcoder.b2m.utils.NumUtil;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -20,16 +18,19 @@ import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.codehaus.stax2.ri.typed.NumberUtil;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -41,6 +42,7 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.lang.invoke.VarHandle;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -52,10 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Vector;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class StockWindow {
 
@@ -64,14 +63,16 @@ public class StockWindow {
     private JBLabel refreshTimeLabel;
     private JBCheckBox jbCheckBox;
 
-    public volatile Integer count;
-    public volatile Integer column;
+    public volatile Integer tableHeaderCount;
+    public volatile Integer tableHeaderColumnIndex;
     private volatile boolean refreshing = false;
     private DefaultTableModel tableModel;
     private Map<String, StockDataBean> stockDataBeanMap;
 
     public StockWindow() {
         createUI();
+
+        initData();
     }
 
     private void createUI() {
@@ -120,7 +121,7 @@ public class StockWindow {
         jbCheckBox.setSelected(true);
         jbCheckBox.addActionListener(e -> {
             GlobalConfig.getInstance().setShowMode(jbCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
-            initColumnIdentifiers();
+            initData();
         });
 
         toolbarDecorator.getActionsPanel().add(jbCheckBox, BorderLayout.WEST);
@@ -169,17 +170,6 @@ public class StockWindow {
         });
 
         JTableHeader tableHeader = table.getTableHeader();
-        // tableHeader.addMouseMotionListener(new MouseMotionAdapter() {
-        //     @Override
-        //     public void mouseDragged(MouseEvent e) {
-        //         StringBuilder tableHeadChange = new StringBuilder();
-        //         for (int i = 0; i < table.getColumnCount(); i++) {
-        //             tableHeadChange.append(table.getColumnName(i)).append(",");
-        //         }
-        //         System.out.println("移动了列位置: " + tableHeadChange);
-        //     }
-        // });
-
         tableHeader.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -196,14 +186,14 @@ public class StockWindow {
 
                 // 表头默认是有排序事件的，我们要覆盖默认的点击排序事件
                 RowSorter.SortKey sortKey = null;
-                if (column == null || column != columnIndex) {
+                if (tableHeaderColumnIndex == null || tableHeaderColumnIndex != columnIndex) {
                     // 第一次点击或者切换列点击
-                    column = columnIndex;
-                    count = 0;
+                    tableHeaderColumnIndex = columnIndex;
+                    tableHeaderCount = 0;
                     sortKey = new RowSorter.SortKey(columnIndex, SortOrder.ASCENDING);
                 } else {
-                    count++;
-                    int module = count % 3;
+                    tableHeaderCount++;
+                    int module = tableHeaderCount % 3;
                     if (module == 0) {
                         sortKey = new RowSorter.SortKey(columnIndex, SortOrder.ASCENDING);
                     } else if (module == 1) {
@@ -219,16 +209,61 @@ public class StockWindow {
             }
         });
 
-        stockDataBeanMap = getInitStockDataMap();
+        table.getModel().addTableModelListener(new TableModelListener() {
+            @Override
+            public void tableChanged(TableModelEvent e) {
+                if (e.getColumn() < 0) {
+                    return;
+                }
+                DefaultTableModel tableModel = (DefaultTableModel) e.getSource();
+                String columnName = tableModel.getColumnName(e.getColumn());
+                if (StringUtils.isEmpty(columnName)) {
+                    return;
+                }
 
-        initColumnIdentifiers();
+                Map<String, TableFieldInfo> tableFieldInfoMap = GlobalConfig.getInstance().getStockDisplayNameMap();
+                TableFieldInfo fieldInfo = tableFieldInfoMap.get(columnName);
+                if (e.getType() == TableModelEvent.UPDATE) {
+                    if (fieldInfo.editable()) {
+                        int row = e.getFirstRow();
+                        int column = e.getColumn();
+                        System.out.println("单元格修改: 行 " + row + ", 列 " + column);
+                    }
+                } else if (e.getType() == TableModelEvent.INSERT) {
+                    // 行添加
+                } else if (e.getType() == TableModelEvent.DELETE) {
+                    // 行删除
+                }
+
+                // if (e.getColumn() == COLUMN_INDEX_TO_MONITOR) {
+                //     // 特定列修改处理
+                // }
+            }
+        });
+
+        // 添加编辑器监听
+        table.getDefaultEditor(Object.class).addCellEditorListener(new CellEditorListener() {
+            @Override
+            public void editingStopped(ChangeEvent e) {
+                // 可以在这里获取编辑后的值
+                System.out.println("单元格修改"  );
+            }
+
+            @Override
+            public void editingCanceled(ChangeEvent e) {
+                // 编辑取消处理
+            }
+        });
+
     }
 
-    private void initColumnIdentifiers() {
+    private void initData() {
+        stockDataBeanMap = GlobalConfig.getInstance().getStockDataBeanMap();
+
         List<TableFieldInfo> stockTableFieldInfo = GlobalConfig.getInstance().getStockTableFieldInfoOrder();
         String[] stockTableColumn = stockTableFieldInfo.stream().map(TableFieldInfo::displayName).toArray(String[]::new);
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setColumnIdentifiers(stockTableColumn);
+        ((DefaultTableModel) table.getModel()).setColumnIdentifiers(stockTableColumn);
 
         List<TableFieldInfo> colorTableFieldInfo = stockTableFieldInfo.stream()
                 .filter(tableFieldInfo -> !tableFieldInfo.displayColor().isEmpty()).toList();
@@ -239,6 +274,7 @@ public class StockWindow {
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                         boolean hasFocus, int row, int column) {
+
                     double doubleValue = NumUtil.toDouble(Objects.toString(value).replace("%", ""));
 
                     List<Color> colors = tableFieldInfo.displayColor();
@@ -269,7 +305,7 @@ public class StockWindow {
             });
         }
 
-        TableRowSorter<TableModel> sorter = new TableRowSorter<>(tableModel);
+        TableRowSorter<TableModel> sorter = new TableRowSorter<>(table.getModel());
 
         Comparator<Object> doubleComparator = (o1, o2) -> {
             Double v1 = NumUtil.toDouble(Objects.toString(o1).replace("%", ""));
@@ -301,7 +337,7 @@ public class StockWindow {
             while (refreshing) {
                 refresh();
                 try {
-                    TimeUnit.SECONDS.sleep(5);
+                    Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -313,7 +349,7 @@ public class StockWindow {
         updateStockData(stockDataBeanMap);
 
         // 清空表格模型
-        tableModel.setRowCount(0);
+        ((DefaultTableModel) table.getModel()).setRowCount(0);
 
         Map<String, TableFieldInfo> tableFieldInfoMap = GlobalConfig.getInstance().getStockDisplayNameMap();
         TableColumnModel columnModel = table.getColumnModel();
@@ -347,23 +383,13 @@ public class StockWindow {
                             String fieldName = fieldInfo.fieldName();
                             v.addElement(stockDataBean.getFieldValue(fieldName));
                         }
-                        tableModel.addRow(v);
+                        ((DefaultTableModel) table.getModel()).addRow(v);
                     }
                 });
-        tableModel.fireTableRowsUpdated(0, tableModel.getRowCount() - 1);
+        ((DefaultTableModel) table.getModel()).fireTableRowsUpdated(0, table.getModel().getRowCount() - 1);
 
         SwingUtilities.invokeLater(() -> refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
 
-        GlobalConfig.Config config = GlobalConfig.getInstance().getConfig();
-        System.out.println("refresh config : " + config);
-    }
-
-    public static Map<String, StockDataBean> getInitStockDataMap() {
-        List<StockDataBean> stockDataBeanList = FileUtilTest.fromJsonFile("config/DefaultStockConfig.json", new TypeReference<>() {
-        });
-
-        return stockDataBeanList.stream()
-                .collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
     }
 
     public static void updateStockData(Map<String, StockDataBean> stockDataBeanMap) {
