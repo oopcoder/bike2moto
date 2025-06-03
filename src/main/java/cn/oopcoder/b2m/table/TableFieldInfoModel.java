@@ -34,9 +34,10 @@ public class TableFieldInfoModel extends DefaultTableModel {
 
     protected JBTable table;
     protected List<TableFieldInfo> tableFieldInfoList;
-    protected Map<String, TableFieldInfo> columnNameMap;
+    protected Map<String, TableFieldInfo> displayNameMap;
+    protected List<String> displayNameList;
     protected Map<String, TableFieldInfo> fieldNameMap;
-    protected List<String> columnNameList;
+    protected List<String> fieldNameList;
 
     public TableFieldInfoModel(JBTable table) {
         this.table = table;
@@ -44,13 +45,16 @@ public class TableFieldInfoModel extends DefaultTableModel {
 
     public void setTableFieldInfo(List<TableFieldInfo> tableFieldInfoList) {
         this.tableFieldInfoList = tableFieldInfoList;
-        this.columnNameMap = tableFieldInfoList.stream()
+        this.displayNameMap = tableFieldInfoList.stream()
                 .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
+        this.displayNameList = tableFieldInfoList.stream()
+                .map(TableFieldInfo::displayName).collect(Collectors.toList());
         this.fieldNameMap = tableFieldInfoList.stream()
                 .collect(Collectors.toMap(TableFieldInfo::fieldName, Function.identity()));
-        this.columnNameList = tableFieldInfoList.stream()
-                .map(TableFieldInfo::displayName).collect(Collectors.toList());
-        setColumnIdentifiers(columnNameList.toArray());
+        this.fieldNameList = tableFieldInfoList.stream()
+                .map(TableFieldInfo::fieldName).collect(Collectors.toList());
+
+        setColumnIdentifiers(displayNameList.toArray());
 
         List<TableFieldInfo> colorTableFieldInfo = tableFieldInfoList.stream()
                 .filter(tableFieldInfo -> !tableFieldInfo.displayColor().isEmpty()).toList();
@@ -101,6 +105,14 @@ public class TableFieldInfoModel extends DefaultTableModel {
 
     public TableFieldInfo getTableFieldInfo(int columnIndex) {
         return tableFieldInfoList.get(columnIndex);
+    }
+
+    public TableFieldInfo getTableFieldInfo(String fieldName) {
+        return tableFieldInfoList.get(getColumnIndex(fieldName));
+    }
+
+    public int getColumnIndex(String fieldName) {
+        return fieldNameList.indexOf(fieldName);
     }
 
     public List<TableColumn> getTableColumns() {

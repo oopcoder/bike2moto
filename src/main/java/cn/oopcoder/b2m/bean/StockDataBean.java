@@ -38,6 +38,8 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class StockDataBean {
 
+    public static final String STOCK_CODE_FIELD_NAME = "code";
+
     // 隐蔽模式名，最好是英文
     @TableColumn(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask", editable = true)
     private String maskName;

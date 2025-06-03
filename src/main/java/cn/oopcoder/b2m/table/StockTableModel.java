@@ -1,6 +1,7 @@
 package cn.oopcoder.b2m.table;
 
 import cn.oopcoder.b2m.config.StockConfig;
+
 import com.intellij.ui.table.JBTable;
 
 import java.util.Comparator;
@@ -17,6 +18,7 @@ import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 
+import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
 
 /**
@@ -31,7 +33,7 @@ public class StockTableModel extends TableFieldInfoModel {
         super(table);
     }
 
-    public void setStockDataBeanMap(List<StockConfig> stockConfigs) {
+    public void configStockDataBeanMap(List<StockConfig> stockConfigs) {
         this.stockDataBeanMap = stockConfigs.stream().map(StockDataBean::new).
                 collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
     }
@@ -48,7 +50,7 @@ public class StockTableModel extends TableFieldInfoModel {
         columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
 
         List<TableFieldInfo> fieldInfoList = columnList.stream()
-                .map(t -> columnNameMap.get((String) t.getHeaderValue())).toList();
+                .map(t -> displayNameMap.get((String) t.getHeaderValue())).toList();
 
         stockDataBeanMap.values().stream()
                 .sorted(Comparator.comparing(StockDataBean::getIndex, new Comparator<Integer>() {
@@ -74,11 +76,10 @@ public class StockTableModel extends TableFieldInfoModel {
 
     public void setValueAt(Object aValue, int row, int column) {
         super.setValueAt(aValue, row, column);
-        @SuppressWarnings("unchecked")
-
+        // 根据code字段名找到code的列索引
+        int codeIndex = getColumnIndex(STOCK_CODE_FIELD_NAME);
         Vector<Object> rowVector = dataVector.elementAt(row);
-        // todo code 应该是字段名称
-        int codeIndex = columnNameList.indexOf("code");
+
         Object code = rowVector.elementAt(codeIndex);
         System.out.println("setValueAt(): ");
 

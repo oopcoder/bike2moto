@@ -1,12 +1,10 @@
 package cn.oopcoder.b2m.config;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.ide.util.PropertiesComponent;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -20,7 +18,6 @@ import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.FileUtil;
 import cn.oopcoder.b2m.utils.JacksonUtil;
-import lombok.Data;
 
 import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
 
@@ -119,8 +116,7 @@ public class GlobalConfigManager {
         persist();
     }
 
-
-    public List<StockConfig> getStockDataBeanMap() {
+    public List<StockConfig> getStockConfig() {
         if (config == null || config.getStockConfig() == null || config.getStockConfig().isEmpty()) {
             String json = FileUtil.readString("config/DefaultStockConfig.json");
             List<StockConfig> stockDataBeanList = JacksonUtil.fromJson(json, new TypeReference<>() {

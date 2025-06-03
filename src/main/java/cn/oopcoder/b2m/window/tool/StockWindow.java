@@ -131,7 +131,7 @@ public class StockWindow {
                 List<String> displayNames = tableModel.getTableColumns().stream()
                         .map(tableColumn -> (String) tableColumn.getHeaderValue())
                         .collect(Collectors.toList());
-                GlobalConfigManager.getInstance().persistStockTableColumn(displayNames) ;
+                GlobalConfigManager.getInstance().persistStockTableColumn(displayNames);
             }
 
             @Override
@@ -232,7 +232,7 @@ public class StockWindow {
     }
 
     private void initData() {
-        tableModel.setStockDataBeanMap(GlobalConfigManager.getInstance().getStockDataBeanMap());
+        tableModel.configStockDataBeanMap(GlobalConfigManager.getInstance().getStockConfig());
 
         List<TableFieldInfo> stockTableFieldInfo = GlobalConfigManager.getInstance().getStockTableFieldInfoOrder();
 
