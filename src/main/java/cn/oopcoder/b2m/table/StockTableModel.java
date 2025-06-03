@@ -1,26 +1,21 @@
 package cn.oopcoder.b2m.table;
 
+import cn.oopcoder.b2m.config.StockConfig;
 import com.intellij.ui.table.JBTable;
 
-import org.apache.commons.lang3.time.DateFormatUtils;
-
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import javax.swing.SwingUtilities;
 import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
 
 import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
-import cn.oopcoder.b2m.config.GlobalConfig;
+import cn.oopcoder.b2m.config.GlobalConfigManager;
 
 import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
 
@@ -36,8 +31,9 @@ public class StockTableModel extends TableFieldInfoModel {
         super(table);
     }
 
-    public void setStockDataBeanMap(Map<String, StockDataBean> stockDataBeanMap) {
-        this.stockDataBeanMap = stockDataBeanMap;
+    public void setStockDataBeanMap(List<StockConfig> stockConfigs) {
+        this.stockDataBeanMap = stockConfigs.stream().map(StockDataBean::new).
+                collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
     }
 
     public void refresh() {
@@ -79,13 +75,22 @@ public class StockTableModel extends TableFieldInfoModel {
     public void setValueAt(Object aValue, int row, int column) {
         super.setValueAt(aValue, row, column);
         @SuppressWarnings("unchecked")
+
         Vector<Object> rowVector = dataVector.elementAt(row);
+        // todo code 应该是字段名称
         int codeIndex = columnNameList.indexOf("code");
-        Object o = rowVector.elementAt(codeIndex);
+        Object code = rowVector.elementAt(codeIndex);
         System.out.println("setValueAt(): ");
 
+        StockDataBean stockDataBean = stockDataBeanMap.get((String) code);
+        String fieldName = tableFieldInfoList.get(column).fieldName();
+        stockDataBean.setFieldValue(fieldName, aValue);
 
-        // todo 持久化
-        stockDataBeanMap.get((String) o).setFieldValue(tableFieldInfoList.get(column).fieldName(), String.valueOf(aValue));
+        // 持久化
+        List<StockConfig> list = stockDataBeanMap.values().stream()
+                .map(t -> new StockConfig(t.getMaskName(), t.getAlias(), t.getCode(), t.getIndex()))
+                .toList();
+        GlobalConfigManager.getInstance().persistStockConfig(list);
+
     }
 }

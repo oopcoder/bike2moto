@@ -5,17 +5,18 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GlobalConfig {
+public class StockConfig {
 
-    List<String> stockTableColumn;
+    private String maskName;
 
-    List<StockConfig> stockConfig;
+    private String alias;
 
+    private String code;
+
+    private int index = 0;
 }

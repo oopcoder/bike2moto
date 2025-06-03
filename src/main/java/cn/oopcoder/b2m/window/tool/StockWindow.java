@@ -1,11 +1,10 @@
 package cn.oopcoder.b2m.window.tool;
 
 import cn.oopcoder.b2m.bean.TableFieldInfo;
-import cn.oopcoder.b2m.config.GlobalConfig;
+import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.table.StockTableModel;
-import cn.oopcoder.b2m.table.TableFieldInfoModel;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
@@ -29,18 +28,13 @@ import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.JTableHeader;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
 
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class StockWindow {
@@ -108,7 +102,7 @@ public class StockWindow {
         jbCheckBox.setToolTipText("隐蔽模式");
         jbCheckBox.setSelected(true);
         jbCheckBox.addActionListener(e -> {
-            GlobalConfig.getInstance().setShowMode(jbCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
+            GlobalConfigManager.getInstance().setShowMode(jbCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
             initData();
         });
 
@@ -137,7 +131,7 @@ public class StockWindow {
                 List<String> displayNames = tableModel.getTableColumns().stream()
                         .map(tableColumn -> (String) tableColumn.getHeaderValue())
                         .collect(Collectors.toList());
-                GlobalConfig.getInstance().setStockTableColumn(displayNames).persist();
+                GlobalConfigManager.getInstance().persistStockTableColumn(displayNames) ;
             }
 
             @Override
@@ -238,9 +232,9 @@ public class StockWindow {
     }
 
     private void initData() {
-        tableModel.setStockDataBeanMap(GlobalConfig.getInstance().getStockDataBeanMap());
+        tableModel.setStockDataBeanMap(GlobalConfigManager.getInstance().getStockDataBeanMap());
 
-        List<TableFieldInfo> stockTableFieldInfo = GlobalConfig.getInstance().getStockTableFieldInfoOrder();
+        List<TableFieldInfo> stockTableFieldInfo = GlobalConfigManager.getInstance().getStockTableFieldInfoOrder();
 
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
         tableModel.setTableFieldInfo(stockTableFieldInfo);
