@@ -18,7 +18,7 @@ public class StockDataUtil {
     public static void updateStockData(Map<String, StockDataBean> stockDataBeanMap) {
         String codes = String.join(",", stockDataBeanMap.keySet());
         try {
-            String result = HttpClientPool.getHttpClient().get("http://qt.gtimg.cn/q=" + codes);
+            String result = getStockData(codes);
 
             String[] lines = result.split("\n");
             for (String line : lines) {
@@ -52,6 +52,26 @@ public class StockDataUtil {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+    public static String getStockData(String codes) throws Exception {
+        String result = HttpClientPool.getHttpClient().get("http://qt.gtimg.cn/q=" + codes);
+        System.out.println("http请求股票数据结果: " + result);
+        return result;
+    }
+
+    /**
+     * v_pv_none_match="1"; 没有匹配到
+     */
+    public static boolean isStockCode(String code) {
+        try {
+            return !"v_pv_none_match=\"1\";\n".equals(getStockData(code));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // 抛异常认为是股票代码，后续发现不是股票代码可以在界面上面做删除操作
+        return true;
     }
 
 }

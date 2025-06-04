@@ -2,6 +2,7 @@ package cn.oopcoder.b2m.table;
 
 import cn.oopcoder.b2m.config.StockConfig;
 
+import cn.oopcoder.b2m.utils.StockDataUtil;
 import com.intellij.ui.table.JBTable;
 
 import java.util.Comparator;
@@ -83,27 +84,41 @@ public class StockTableModel extends TableFieldInfoModel {
 
     public void setValueAt(Object aValue, int row, int column) {
         super.setValueAt(aValue, row, column);
-        // 根据code字段名找到code的列索引
-        int codeIndex = getColumnIndex(STOCK_CODE_FIELD_NAME);
-        Vector<Object> rowVector = dataVector.elementAt(row);
+        System.out.println("setValueAt(): " + aValue);
 
-        Object code = rowVector.elementAt(codeIndex);
-        System.out.println("setValueAt(): ");
+        String stockCode = getStockCode(row);
+        StockDataBean stockDataBean = stockDataBeanMap.get(stockCode);
 
-        StockDataBean stockDataBean = stockDataBeanMap.get((String) code);
         String fieldName = tableFieldInfoList.get(column).fieldName();
         stockDataBean.setFieldValue(fieldName, aValue);
 
         persistStockConfig();
     }
 
+    /**
+     * 获取股票编码
+     *
+     * @param rowIndex 行索引
+     */
+    public String getStockCode(int rowIndex) {
+        return (String) getColumnValue(rowIndex, STOCK_CODE_FIELD_NAME);
+    }
+
     public void addStock(String code) {
         if (stockDataBeanMap.containsKey(code)) {
             throw new RuntimeException("编码已经存在，请勿重复输入");
         }
+        if (!StockDataUtil.isStockCode(code)) {
+            throw new RuntimeException("编码不正确，请确认后再输入");
+        }
         StockDataBean stockDataBean = new StockDataBean();
         stockDataBean.setCode(code);
         stockDataBeanMap.put(code, stockDataBean);
+        persistStockConfig();
+    }
+
+    public void removeStock(String code) {
+        stockDataBeanMap.remove(code);
         persistStockConfig();
     }
 

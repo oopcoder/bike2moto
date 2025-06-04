@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Vector;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -25,6 +26,8 @@ import javax.swing.table.TableRowSorter;
 
 import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.utils.NumUtil;
+
+import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 
 /**
  * Created by oopcoder at 2025/6/2 15:32 .
@@ -66,7 +69,7 @@ public class TableFieldInfoModel extends DefaultTableModel {
             tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                        boolean hasFocus, int row, int column) {
+                                                               boolean hasFocus, int row, int column) {
 
                     double doubleValue = NumUtil.toDouble(Objects.toString(value).replace("%", ""));
 
@@ -111,8 +114,17 @@ public class TableFieldInfoModel extends DefaultTableModel {
         return tableFieldInfoList.get(getColumnIndex(fieldName));
     }
 
+    /**
+     * 根据字段名找到列索引
+     */
     public int getColumnIndex(String fieldName) {
         return fieldNameList.indexOf(fieldName);
+    }
+
+    public Object getColumnValue(int rowIndex, String fieldName) {
+        int codeIndex = getColumnIndex(fieldName);
+        Vector rowVector = dataVector.elementAt(rowIndex);
+        return rowVector.elementAt(codeIndex);
     }
 
     public List<TableColumn> getTableColumns() {

@@ -8,6 +8,7 @@ import cn.oopcoder.b2m.table.StockTableModel;
 
 import cn.oopcoder.b2m.table.TableColumnModelAdapter;
 import cn.oopcoder.b2m.table.ToggleRowSortMouseListener;
+import cn.oopcoder.b2m.utils.StockDataUtil;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -65,10 +66,10 @@ public class StockWindow {
         JPanel tablePanel = toolbarDecorator
                 .setAddAction(anAction -> { // 添加按钮回调
                     // 弹窗新增逻辑
-                    String stockInput = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
-                    if (stockInput != null && !stockInput.trim().isEmpty()) {
+                    String stockCode = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
+                    if (stockCode != null && !stockCode.trim().isEmpty()) {
                         try {
-                            tableModel.addStock(stockInput);
+                            tableModel.addStock(stockCode);
                             refreshModel();
                         } catch (Exception e) {
                             JOptionPane.showMessageDialog(rootPanel, e.getLocalizedMessage(), "错误", JOptionPane.ERROR_MESSAGE);
@@ -78,11 +79,12 @@ public class StockWindow {
                 .setRemoveAction(anAction -> { // 删除按钮回调
                     int row = table.getSelectedRow();
                     if (row >= 0) {
-                        ((DefaultTableModel) table.getModel()).removeRow(row);
+                        String stockCode = ((StockTableModel) table.getModel()).getStockCode(row);
+                        tableModel.removeStock(stockCode);
+                        refreshModel();
                     }
                 })
                 .setMoveUpAction(anAction -> { /* 上移逻辑 */ })
-                .setMoveDownAction(anAction -> { /* 下移逻辑 */ })
                 .addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
@@ -94,6 +96,7 @@ public class StockWindow {
                         return ActionUpdateThread.EDT;
                     }
                 })
+                .setMoveDownAction(anAction -> { /* 下移逻辑 */ })
                 .addExtraAction(new AnActionButton(Const.CONTINUE_REFRESH_TABLE, AllIcons.Toolwindows.ToolWindowRun) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
