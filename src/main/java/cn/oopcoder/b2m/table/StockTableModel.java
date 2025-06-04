@@ -18,6 +18,7 @@ import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 
+import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
 
@@ -66,7 +67,12 @@ public class StockTableModel extends TableFieldInfoModel {
 
                         for (TableFieldInfo fieldInfo : fieldInfoList) {
                             String fieldName = fieldInfo.fieldName();
-                            v.addElement(stockDataBean.getFieldValue(fieldName));
+                            Object fieldValue = stockDataBean.getFieldValue(fieldName);
+                            // 涨幅
+                            if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
+                                fieldValue = fieldValue + "%";
+                            }
+                            v.addElement(fieldValue);
                         }
                         addRow(v);
                     }

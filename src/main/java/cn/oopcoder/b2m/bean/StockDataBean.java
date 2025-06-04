@@ -39,6 +39,7 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 public class StockDataBean {
 
     public static final String STOCK_CODE_FIELD_NAME = "code";
+    public static final String CHANGE_PERCENT_FIELD_NAME = "changePercent";
 
     // 隐蔽模式名，最好是英文
     @TableColumn(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask", editable = true)
@@ -64,7 +65,7 @@ public class StockDataBean {
     @TableColumn(name = "最低价", order = 40, enableNumberComparator = true)
     private String low;
 
-    @TableColumn(name = "代码", order = 45, editable = true)
+    @TableColumn(name = "编码", order = 45, editable = true)
     private String code;
 
     @TableColumn(name = "排序", order = 50, editable = true)
