@@ -8,7 +8,7 @@ import cn.oopcoder.b2m.table.StockTableModel;
 
 import cn.oopcoder.b2m.table.TableColumnModelAdapter;
 import cn.oopcoder.b2m.table.ToggleRowSortMouseListener;
-import cn.oopcoder.b2m.utils.StockDataUtil;
+
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -25,18 +25,12 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
-import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
-import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,14 +47,11 @@ public class StockWindow {
     public StockWindow() {
         createUI();
 
-        initData();
+        createModel();
     }
 
     private void createUI() {
         table = new JBTable();
-
-        tableModel = new StockTableModel(table);
-        table.setModel(tableModel);
 
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator
@@ -112,6 +103,27 @@ public class StockWindow {
                         return ActionUpdateThread.EDT;
                     }
                 })
+                .addExtraAction(new AnActionButton(Const.RESET_CONFIG, AllIcons.General.Reset) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        int result = JOptionPane.showConfirmDialog(
+                            rootPanel, 
+                            "确定要恢复默认配置吗？此操作不可撤销！",
+                            "确认恢复",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE
+                        );
+                        if (result == JOptionPane.YES_OPTION) {
+                            GlobalConfigManager.getInstance().clear();
+                            createModel();
+                        }
+                    }
+
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
+                })
                 .createPanel();
 
         rootPanel.add(tablePanel, BorderLayout.CENTER);
@@ -127,7 +139,7 @@ public class StockWindow {
         jbCheckBox.setSelected(true);
         jbCheckBox.addActionListener(e -> {
             GlobalConfigManager.getInstance().setShowMode(jbCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
-            initData();
+            createModel();
         });
 
         toolbarDecorator.getActionsPanel().add(jbCheckBox, BorderLayout.WEST);
@@ -199,7 +211,10 @@ public class StockWindow {
 
     }
 
-    private void initData() {
+    private void createModel() {
+
+        tableModel = new StockTableModel(table);
+        table.setModel(tableModel);
 
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
         tableModel.setTableFieldInfo(GlobalConfigManager.getInstance().getStockTableFieldInfoOrder());
