@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -108,7 +109,7 @@ public class GlobalConfigManager {
         persist();
     }
 
-    public void persistStockConfig(List<StockConfig> stockConfig) {
+    public void persistStockConfig(Set<StockConfig> stockConfig) {
         if (config == null) {
             config = new GlobalConfig();
         }
@@ -116,10 +117,10 @@ public class GlobalConfigManager {
         persist();
     }
 
-    public List<StockConfig> getStockConfig() {
+    public Set<StockConfig> getStockConfig() {
         if (config == null || config.getStockConfig() == null || config.getStockConfig().isEmpty()) {
             String json = FileUtil.readString("config/DefaultStockConfig.json");
-            List<StockConfig> stockDataBeanList = JacksonUtil.fromJson(json, new TypeReference<>() {
+            Set<StockConfig> stockDataBeanList = JacksonUtil.fromJson(json, new TypeReference<>() {
             });
             persistStockConfig(stockDataBeanList);
             return stockDataBeanList;

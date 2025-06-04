@@ -7,6 +7,7 @@ import com.intellij.ui.table.JBTable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -34,7 +35,7 @@ public class StockTableModel extends TableFieldInfoModel {
         super(table);
     }
 
-    public void configStockDataBeanMap(List<StockConfig> stockConfigs) {
+    public void configStockDataBeanMap(Set<StockConfig> stockConfigs) {
         this.stockDataBeanMap = stockConfigs.stream().map(StockDataBean::new).
                 collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
     }
@@ -93,11 +94,25 @@ public class StockTableModel extends TableFieldInfoModel {
         String fieldName = tableFieldInfoList.get(column).fieldName();
         stockDataBean.setFieldValue(fieldName, aValue);
 
-        // 持久化
-        List<StockConfig> list = stockDataBeanMap.values().stream()
-                .map(t -> new StockConfig(t.getMaskName(), t.getAlias(), t.getCode(), t.getIndex()))
-                .toList();
-        GlobalConfigManager.getInstance().persistStockConfig(list);
+        persistStockConfig();
+    }
 
+    public void addStock(String code) {
+        if (stockDataBeanMap.containsKey(code)) {
+            throw new RuntimeException("编码已经存在，请勿重复输入");
+        }
+        StockDataBean stockDataBean = new StockDataBean();
+        stockDataBean.setCode(code);
+        stockDataBeanMap.put(code, stockDataBean);
+        persistStockConfig();
+    }
+
+
+    private void persistStockConfig() {
+        // 持久化
+        Set<StockConfig> list = stockDataBeanMap.values().stream()
+                .map(t -> new StockConfig(t.getMaskName(), t.getAlias(), t.getCode(), t.getIndex()))
+                .collect(Collectors.toSet());
+        GlobalConfigManager.getInstance().persistStockConfig(list);
     }
 }

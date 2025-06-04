@@ -29,6 +29,7 @@ import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 import java.awt.*;
@@ -61,7 +62,28 @@ public class StockWindow {
         table.setModel(tableModel);
 
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
-        JPanel tablePanel = toolbarDecorator.addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
+        JPanel tablePanel = toolbarDecorator
+                .setAddAction(anAction -> { // 添加按钮回调
+                    // 弹窗新增逻辑
+                    String stockInput = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
+                    if (stockInput != null && !stockInput.trim().isEmpty()) {
+                        try {
+                            tableModel.addStock(stockInput);
+                            refreshModel();
+                        } catch (Exception e) {
+                            JOptionPane.showMessageDialog(rootPanel, e.getLocalizedMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                })
+                .setRemoveAction(anAction -> { // 删除按钮回调
+                    int row = table.getSelectedRow();
+                    if (row >= 0) {
+                        ((DefaultTableModel) table.getModel()).removeRow(row);
+                    }
+                })
+                .setMoveUpAction(anAction -> { /* 上移逻辑 */ })
+                .setMoveDownAction(anAction -> { /* 下移逻辑 */ })
+                .addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
                         refreshModel();
@@ -175,15 +197,15 @@ public class StockWindow {
     }
 
     private void initData() {
-        tableModel.configStockDataBeanMap(GlobalConfigManager.getInstance().getStockConfig());
-
-        List<TableFieldInfo> stockTableFieldInfo = GlobalConfigManager.getInstance().getStockTableFieldInfoOrder();
 
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setTableFieldInfo(stockTableFieldInfo);
+        tableModel.setTableFieldInfo(GlobalConfigManager.getInstance().getStockTableFieldInfoOrder());
 
         // 配置排序器
         tableModel.configRowSorter();
+
+        // 配置要监控的股票
+        tableModel.configStockDataBeanMap(GlobalConfigManager.getInstance().getStockConfig());
 
         // 第一次刷新一下
         refreshModel();

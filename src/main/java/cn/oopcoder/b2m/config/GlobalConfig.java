@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -16,6 +17,6 @@ public class GlobalConfig {
 
     List<String> stockTableColumn;
 
-    List<StockConfig> stockConfig;
+    Set<StockConfig> stockConfig;
 
 }
