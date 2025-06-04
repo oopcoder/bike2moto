@@ -6,6 +6,8 @@ import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.table.StockTableModel;
 
+import cn.oopcoder.b2m.table.TableColumnModelAdapter;
+import cn.oopcoder.b2m.table.ToggleRowSortMouseListener;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -43,9 +45,6 @@ public class StockWindow {
     private JBTable table;
     private JBLabel refreshTimeLabel;
     private JBCheckBox jbCheckBox;
-
-    public volatile Integer tableHeaderCount;
-    public volatile Integer tableHeaderColumnIndex;
     private volatile boolean refreshing = false;
     private StockTableModel tableModel;
 
@@ -108,16 +107,7 @@ public class StockWindow {
 
         toolbarDecorator.getActionsPanel().add(jbCheckBox, BorderLayout.WEST);
 
-        table.getColumnModel().addColumnModelListener(new TableColumnModelListener() {
-            @Override
-            public void columnAdded(TableColumnModelEvent e) {
-                // Do nothing
-            }
-
-            @Override
-            public void columnRemoved(TableColumnModelEvent e) {
-                // Do nothing
-            }
+        table.getColumnModel().addColumnModelListener(new TableColumnModelAdapter() {
 
             @Override
             public void columnMoved(TableColumnModelEvent e) {
@@ -133,57 +123,10 @@ public class StockWindow {
                         .collect(Collectors.toList());
                 GlobalConfigManager.getInstance().persistStockTableColumn(displayNames);
             }
-
-            @Override
-            public void columnMarginChanged(ChangeEvent e) {
-                // Do nothing
-            }
-
-            @Override
-            public void columnSelectionChanged(ListSelectionEvent e) {
-                // Do nothing
-            }
         });
 
         JTableHeader tableHeader = table.getTableHeader();
-        tableHeader.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                // 获取点击的列索引
-                int col = tableHeader.columnAtPoint(e.getPoint());
-                if (col < 0) {
-                    return;
-                }
-                String colName = table.getColumnName(col);
-
-                // 列的位置变更后，这个会对不上，需要转换, 看源码，BasicTableHeaderUI.MouseInputHandler.mouseClicked
-                int columnIndex = table.convertColumnIndexToModel(col);
-                System.out.printf("点击了表头，列名: 【%s】，列索引：%d -> %d\n", colName, col, columnIndex);
-
-                // 表头默认是有排序事件的，我们要覆盖默认的点击排序事件
-                RowSorter.SortKey sortKey = null;
-                if (tableHeaderColumnIndex == null || tableHeaderColumnIndex != columnIndex) {
-                    // 第一次点击或者切换列点击
-                    tableHeaderColumnIndex = columnIndex;
-                    tableHeaderCount = 0;
-                    sortKey = new RowSorter.SortKey(columnIndex, SortOrder.ASCENDING);
-                } else {
-                    tableHeaderCount++;
-                    int module = tableHeaderCount % 3;
-                    if (module == 0) {
-                        sortKey = new RowSorter.SortKey(columnIndex, SortOrder.ASCENDING);
-                    } else if (module == 1) {
-                        sortKey = new RowSorter.SortKey(columnIndex, SortOrder.DESCENDING);
-                    } else if (module == 2) {
-                        sortKey = new RowSorter.SortKey(columnIndex, SortOrder.UNSORTED);
-                    }
-                }
-
-                ArrayList<RowSorter.SortKey> keys = new ArrayList<>();
-                keys.add(sortKey);
-                table.getRowSorter().setSortKeys(keys);
-            }
-        });
+        tableHeader.addMouseListener(new ToggleRowSortMouseListener());
 
         table.getModel().addTableModelListener(new TableModelListener() {
             @Override
