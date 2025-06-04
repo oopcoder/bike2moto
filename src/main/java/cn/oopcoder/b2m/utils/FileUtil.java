@@ -35,7 +35,7 @@ public class FileUtil {
             throw new RuntimeException("文件不存在");
         }
         try {
-            return new String(inputStream.readAllBytes());
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException("读取文件异常");
         }
