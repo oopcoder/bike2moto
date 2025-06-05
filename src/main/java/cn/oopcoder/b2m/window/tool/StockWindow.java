@@ -4,10 +4,10 @@ import cn.oopcoder.b2m.bean.TableFieldInfo;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
-import cn.oopcoder.b2m.table.StockTableModel;
+import cn.oopcoder.b2m.table.model.StockTableModel;
 
-import cn.oopcoder.b2m.table.TableColumnModelAdapter;
-import cn.oopcoder.b2m.table.ToggleRowSortMouseListener;
+import cn.oopcoder.b2m.table.listener.TableColumnModelAdapter;
+import cn.oopcoder.b2m.table.listener.ToggleRowSortMouseListener;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
@@ -28,7 +28,6 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 
 import java.awt.*;
@@ -62,7 +61,6 @@ public class StockWindow {
                     if (stockCode != null && !stockCode.trim().isEmpty()) {
                         try {
                             tableModel.addStock(stockCode);
-                            refreshModel();
                         } catch (Exception e) {
                             JOptionPane.showMessageDialog(rootPanel, e.getLocalizedMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                         }
@@ -70,14 +68,12 @@ public class StockWindow {
                 })
 
                 .setRemoveActionName("删除").setRemoveAction(anAction -> { // 删除按钮回调
-                    tableModel.remove(table.getSelectedRow());
-                    refreshModel();
+                    tableModel.remove(table.convertRowIndexToModel(table.getSelectedRow()));
                 })
 
                 .setEditActionName("固定").setEditAction(anAction -> {
                     // 暂时用这个按钮实现
-                    tableModel.pinTop(table.getSelectedRow());
-                    refreshModel();
+                    tableModel.togglePinTop(table.convertRowIndexToModel(table.getSelectedRow()));
                 })
 
                 .setMoveUpActionName("上移").setMoveUpAction(anAction -> { /* 上移逻辑 */ })
@@ -144,7 +140,6 @@ public class StockWindow {
         jbCheckBox.setSelected(true);
         jbCheckBox.addActionListener(e -> {
             beautifyTable();
-
             GlobalConfigManager.getInstance().setShowMode(jbCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
             createModel();
         });

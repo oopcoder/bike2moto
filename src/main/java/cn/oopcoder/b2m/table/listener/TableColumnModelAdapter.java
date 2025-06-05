@@ -1,4 +1,4 @@
-package cn.oopcoder.b2m.table;
+package cn.oopcoder.b2m.table.listener;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;

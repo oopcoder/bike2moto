@@ -1,16 +1,19 @@
-package cn.oopcoder.b2m.table;
+package cn.oopcoder.b2m.table.model;
 
 import cn.oopcoder.b2m.config.StockConfig;
 
 import cn.oopcoder.b2m.utils.StockDataUtil;
+
+import com.intellij.openapi.util.Pair;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.table.JBTable;
 
+import java.awt.Color;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,11 +29,16 @@ import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
 
 /**
  * Created by oopcoder at 2025/6/2 15:32 .
+ * <p>
+ * 立马刷新ui
+ * fireTableRowsUpdated(modelRowIndex, modelRowIndex);
+ * fireTableDataChanged();
  */
 
 public class StockTableModel extends TableFieldInfoModel {
 
     private Map<String, StockDataBean> stockDataBeanMap;
+    // private Map<String, Boolean> pinTopMap;
 
     public StockTableModel(JBTable table) {
         super(table);
@@ -39,6 +47,9 @@ public class StockTableModel extends TableFieldInfoModel {
     public void configStockDataBeanMap(Set<StockConfig> stockConfigs) {
         this.stockDataBeanMap = stockConfigs.stream().map(StockDataBean::new).
                 collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
+        // this.pinTopMap = stockConfigs.stream().map(StockDataBean::new).
+        //         collect(Collectors.toMap(StockDataBean::getCode, StockDataBean::isPinTop));
+
     }
 
     public void refresh() {
@@ -53,39 +64,37 @@ public class StockTableModel extends TableFieldInfoModel {
         columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
 
         List<TableFieldInfo> fieldInfoList = columnList.stream()
-                .map(t -> displayNameMap.get((String) t.getHeaderValue())).toList();
+                .map(tableColumn -> displayNameMap.get((String) tableColumn.getHeaderValue()))
+                .toList();
 
         stockDataBeanMap.values().stream()
                 .sorted(Comparator.comparing(StockDataBean::isPinTop).reversed()
                         .thenComparing(StockDataBean::getIndex))
-                .forEach(new Consumer<StockDataBean>() {
-                    @Override
-                    public void accept(StockDataBean stockDataBean) {
-                        Vector<Object> v = new Vector<>(fieldInfoList.size());
+                .forEach(stockDataBean -> {
 
-                        for (TableFieldInfo fieldInfo : fieldInfoList) {
-                            String fieldName = fieldInfo.fieldName();
-                            Object fieldValue = stockDataBean.getFieldValue(fieldName);
-                            // 涨幅
-                            if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
-                                fieldValue = fieldValue + "%";
-                            }
-                            v.addElement(fieldValue);
+                    Vector<Object> vector = new Vector<>(fieldInfoList.size());
+
+                    for (TableFieldInfo fieldInfo : fieldInfoList) {
+                        String fieldName = fieldInfo.fieldName();
+                        Object fieldValue = stockDataBean.getFieldValue(fieldName);
+                        // 涨幅
+                        if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
+                            fieldValue = fieldValue + "%";
                         }
-                        addRow(v);
+                        vector.addElement(fieldValue);
                     }
+                    addRow(vector);
                 });
         fireTableRowsUpdated(0, table.getModel().getRowCount() - 1);
     }
 
-    public void setValueAt(Object aValue, int row, int column) {
-        super.setValueAt(aValue, row, column);
+    public void setValueAt(Object aValue, int modelRowIndex, int modelColumnIndex) {
+        super.setValueAt(aValue, modelRowIndex, modelColumnIndex);
         System.out.println("setValueAt(): " + aValue);
 
-        String stockCode = getStockCode(row);
-        StockDataBean stockDataBean = stockDataBeanMap.get(stockCode);
+        StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
 
-        String fieldName = tableFieldInfoList.get(column).fieldName();
+        String fieldName = tableFieldInfoList.get(modelColumnIndex).fieldName();
         stockDataBean.setFieldValue(fieldName, aValue);
 
         persistStockConfig();
@@ -94,10 +103,10 @@ public class StockTableModel extends TableFieldInfoModel {
     /**
      * 获取股票编码
      *
-     * @param rowIndex 行索引
+     * @param modelRowIndex 行索引
      */
-    public String getStockCode(int rowIndex) {
-        return (String) getColumnValue(rowIndex, STOCK_CODE_FIELD_NAME);
+    public String getStockCode(int modelRowIndex) {
+        return (String) getColumnValue(modelRowIndex, STOCK_CODE_FIELD_NAME);
     }
 
     public void addStock(String code) {
@@ -116,11 +125,11 @@ public class StockTableModel extends TableFieldInfoModel {
     /**
      * 删除第几行
      */
-    public void remove(int rowIndex) {
-        if (rowIndex < 0) {
+    public void remove(int modelRowIndex) {
+        if (modelRowIndex < 0) {
             return;
         }
-        String stockCode = getStockCode(rowIndex);
+        String stockCode = getStockCode(modelRowIndex);
         removeStock(stockCode);
     }
 
@@ -132,16 +141,34 @@ public class StockTableModel extends TableFieldInfoModel {
     /**
      * 将第几行添加到固定区域
      */
-    public void pinTop(int rowIndex) {
-        if (rowIndex < 0) {
+    public void togglePinTop(int modelRowIndex) {
+        if (modelRowIndex < 0) {
             return;
         }
-        String stockCode = getStockCode(rowIndex);
-        StockDataBean stockDataBean = stockDataBeanMap.get(stockCode);
-        stockDataBean.setPinTop(true);
+        StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
+        stockDataBean.setPinTop(!stockDataBean.isPinTop());
+
+        // todo index 变成最小值
         persistStockConfig();
     }
 
+    public boolean isPinTop(int modelRowIndex) {
+        if (modelRowIndex < 0) {
+            return false;
+        }
+
+        // String stockCode = getStockCode(modelRowIndex);
+        // return pinTopMap.get(stockCode);
+
+        StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
+        System.out.println(modelRowIndex + " isPinTop(): " + stockDataBean.isPinTop() + " " + stockDataBean.getCode());
+        return stockDataBean.isPinTop();
+    }
+
+    public StockDataBean getStockDataBean(int modelRowIndex) {
+        String stockCode = getStockCode(modelRowIndex);
+        return stockDataBeanMap.get(stockCode);
+    }
 
     private void persistStockConfig() {
         // 持久化
@@ -149,5 +176,14 @@ public class StockTableModel extends TableFieldInfoModel {
                 .map(t -> new StockConfig(t.getMaskName(), t.getAlias(), t.getCode(), t.getIndex(), t.isPinTop()))
                 .collect(Collectors.toSet());
         GlobalConfigManager.getInstance().persistStockConfig(list);
+
+        // 修改过数据，刷新一下
+        refresh();
     }
+
+    @Override
+    public Color getBackgroundColor(int modelRowIndex) {
+        return isPinTop(modelRowIndex) ? JBColor.LIGHT_GRAY : null;
+    }
+
 }
