@@ -79,10 +79,9 @@ public class GlobalConfigManager {
     }
 
     public void clear() {
-        // 清空
+        String json = config == null ? null : JacksonUtil.toJson(this.config);
         // propertiesComponent.unsetValue(GLOBAL_CONFIG_KEY);// 这个没效果？有空测试一下
         propertiesComponent.setValue(GLOBAL_CONFIG_KEY, "");
-        String json = config == null ? null : JacksonUtil.toJson(this.config);
         System.out.println("配置清除成功：【" + json + " 】");
         config = null;
 

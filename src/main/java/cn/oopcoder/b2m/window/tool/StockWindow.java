@@ -75,7 +75,9 @@ public class StockWindow {
                         refreshModel();
                     }
                 })
+                .setEditAction(anAction -> { /* 编辑逻辑 */ })
                 .setMoveUpAction(anAction -> { /* 上移逻辑 */ })
+                .setMoveDownAction(anAction -> { /* 下移逻辑 */ })
                 .addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
@@ -87,7 +89,6 @@ public class StockWindow {
                         return ActionUpdateThread.EDT;
                     }
                 })
-                .setMoveDownAction(anAction -> { /* 下移逻辑 */ })
                 .addExtraAction(new AnActionButton(Const.CONTINUE_REFRESH_TABLE, AllIcons.Toolwindows.ToolWindowRun) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
@@ -107,11 +108,11 @@ public class StockWindow {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
                         int result = JOptionPane.showConfirmDialog(
-                            rootPanel, 
-                            "确定要恢复默认配置吗？此操作不可撤销！",
-                            "确认恢复",
-                            JOptionPane.YES_NO_OPTION,
-                            JOptionPane.WARNING_MESSAGE
+                                rootPanel,
+                                "确定要恢复默认配置吗？此操作不可撤销！",
+                                "确认恢复",
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.WARNING_MESSAGE
                         );
                         if (result == JOptionPane.YES_OPTION) {
                             GlobalConfigManager.getInstance().clear();
@@ -165,7 +166,37 @@ public class StockWindow {
         JTableHeader tableHeader = table.getTableHeader();
         tableHeader.addMouseListener(new ToggleRowSortMouseListener());
 
-        table.getModel().addTableModelListener(new TableModelListener() {
+        // 添加编辑器监听
+        table.getDefaultEditor(Object.class).addCellEditorListener(new CellEditorListener() {
+            @Override
+            public void editingStopped(ChangeEvent e) {
+                // 可以在这里获取编辑后的值
+                System.out.println("单元格 编辑器监听");
+            }
+
+            @Override
+            public void editingCanceled(ChangeEvent e) {
+                // 编辑取消处理
+            }
+        });
+
+    }
+
+    private void createModel() {
+
+        tableModel = new StockTableModel(table);
+        table.setModel(tableModel);
+
+        // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
+        tableModel.setTableFieldInfo(GlobalConfigManager.getInstance().getStockTableFieldInfoOrder());
+
+        // 配置排序器
+        tableModel.configRowSorter();
+
+        // 配置要监控的股票
+        tableModel.configStockDataBeanMap(GlobalConfigManager.getInstance().getStockConfig());
+
+        tableModel.addTableModelListener(new TableModelListener() {
             @Override
             public void tableChanged(TableModelEvent e) {
                 if (e.getColumn() < 0) {
@@ -194,36 +225,6 @@ public class StockWindow {
                 // }
             }
         });
-
-        // 添加编辑器监听
-        table.getDefaultEditor(Object.class).addCellEditorListener(new CellEditorListener() {
-            @Override
-            public void editingStopped(ChangeEvent e) {
-                // 可以在这里获取编辑后的值
-                System.out.println("单元格修改");
-            }
-
-            @Override
-            public void editingCanceled(ChangeEvent e) {
-                // 编辑取消处理
-            }
-        });
-
-    }
-
-    private void createModel() {
-
-        tableModel = new StockTableModel(table);
-        table.setModel(tableModel);
-
-        // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setTableFieldInfo(GlobalConfigManager.getInstance().getStockTableFieldInfoOrder());
-
-        // 配置排序器
-        tableModel.configRowSorter();
-
-        // 配置要监控的股票
-        tableModel.configStockDataBeanMap(GlobalConfigManager.getInstance().getStockConfig());
 
         // 第一次刷新一下
         refreshModel();
