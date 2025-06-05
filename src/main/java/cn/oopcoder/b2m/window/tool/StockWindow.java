@@ -142,9 +142,12 @@ public class StockWindow {
         jbCheckBox.setToolTipText("隐蔽模式");
         jbCheckBox.setSelected(true);
         jbCheckBox.addActionListener(e -> {
+            beautifyTable();
+
             GlobalConfigManager.getInstance().setShowMode(jbCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
             createModel();
         });
+        beautifyTable();
 
         toolbarDecorator.getActionsPanel().add(jbCheckBox, BorderLayout.WEST);
 
@@ -183,6 +186,13 @@ public class StockWindow {
             }
         });
 
+    }
+
+    private void beautifyTable() {
+        // 不显示网格线
+        table.setShowGrid(false);
+        // 设置表格条纹（斑马线）
+        table.setStriped(!jbCheckBox.isSelected());
     }
 
     private void createModel() {

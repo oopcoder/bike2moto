@@ -40,6 +40,9 @@ public class GlobalConfigManager {
         // 使用PropertiesComponent.getInstance()存储应用程序级值
         // 使用PropertiesComponent.getInstance(Project)方法存储项目级值
         // !!! 注意非正常关闭可能导致配置数据丢失，没有刷到硬盘中，调试重启、停止属于非正常关闭
+
+        // 正式版本的存储地址               C:\Users\xxxx\AppData\Roaming\JetBrains\IntelliJIdea2025.1\options\other.xml
+        // 开发沙箱环境idea的存储地址        build/idea-sandbox/IC-2024.2.5/config/options/other.xml
         propertiesComponent = PropertiesComponent.getInstance();
         refresh();
     }
