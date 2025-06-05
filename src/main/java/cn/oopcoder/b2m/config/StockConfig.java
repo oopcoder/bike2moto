@@ -22,6 +22,9 @@ public class StockConfig {
 
     private int index = 0;
 
+    // 固定在顶部
+    private boolean pinTop = false;
+
 
     @Override
     public boolean equals(Object o) {

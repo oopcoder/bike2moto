@@ -55,7 +55,7 @@ public class StockWindow {
 
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator
-                .setAddAction(anAction -> { // 添加按钮回调
+                .setAddActionName("新增").setAddAction(anAction -> { // 添加按钮回调
                     // 弹窗新增逻辑
                     String stockCode = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
                     if (stockCode != null && !stockCode.trim().isEmpty()) {
@@ -67,17 +67,20 @@ public class StockWindow {
                         }
                     }
                 })
-                .setRemoveAction(anAction -> { // 删除按钮回调
-                    int row = table.getSelectedRow();
-                    if (row >= 0) {
-                        String stockCode = ((StockTableModel) table.getModel()).getStockCode(row);
-                        tableModel.removeStock(stockCode);
-                        refreshModel();
-                    }
+
+                .setRemoveActionName("删除").setRemoveAction(anAction -> { // 删除按钮回调
+                    tableModel.remove(table.getSelectedRow());
+                    refreshModel();
                 })
-                .setEditAction(anAction -> { /* 编辑逻辑 */ })
-                .setMoveUpAction(anAction -> { /* 上移逻辑 */ })
-                .setMoveDownAction(anAction -> { /* 下移逻辑 */ })
+
+                .setEditActionName("固定").setEditAction(anAction -> {
+                    // 暂时用这个按钮实现
+                    tableModel.pinTop(table.getSelectedRow());
+                    refreshModel();
+                })
+
+                .setMoveUpActionName("上移").setMoveUpAction(anAction -> { /* 上移逻辑 */ })
+                .setMoveDownActionName("上移").setMoveDownAction(anAction -> { /* 下移逻辑 */ })
                 .addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {

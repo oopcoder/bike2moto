@@ -3,17 +3,20 @@
     "code": "sz300059",
     "maskName": "dc",
     "alias": "富",
-    "index": 10
+    "index": 10,
+    "pinTop": true
   },
   {
     "code": "sh513090",
     "maskName": "xgzq",
     "alias": "港",
-    "index": 15
+    "index": 20,
+    "pinTop": true
   },
   {
     "code": "sz002195",
-    "alias": "岩"
+    "alias": "岩",
+    "index": 15
   },
   {
     "code": "sh601360",

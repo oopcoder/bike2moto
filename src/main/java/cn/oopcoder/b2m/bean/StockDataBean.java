@@ -77,6 +77,10 @@ public class StockDataBean {
     @TableColumn(name = "时间", order = 60, showMode = {Normal})
     private String time;
 
+    // 固定在顶部
+    @TableColumn(name = "固定", order = 45)
+    private boolean pinTop = false;
+
     public static List<TableFieldInfo> hiddenTableFields = getTableColumns(Hidden);
     public static List<TableFieldInfo> normalTableFields = getTableColumns(Normal);
 
@@ -125,6 +129,7 @@ public class StockDataBean {
         this.maskName = stockConfig.getMaskName();
         this.alias = stockConfig.getAlias();
         this.index = stockConfig.getIndex();
+        this.pinTop = stockConfig.isPinTop();
     }
 
     public Object getFieldValue(String fieldName) {

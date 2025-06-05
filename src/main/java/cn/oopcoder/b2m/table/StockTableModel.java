@@ -56,12 +56,8 @@ public class StockTableModel extends TableFieldInfoModel {
                 .map(t -> displayNameMap.get((String) t.getHeaderValue())).toList();
 
         stockDataBeanMap.values().stream()
-                .sorted(Comparator.comparing(StockDataBean::getIndex, new Comparator<Integer>() {
-                    @Override
-                    public int compare(Integer o1, Integer o2) {
-                        return o2.compareTo(o1);
-                    }
-                }))// 默认排序
+                .sorted(Comparator.comparing(StockDataBean::isPinTop).reversed()
+                        .thenComparing(StockDataBean::getIndex))
                 .forEach(new Consumer<StockDataBean>() {
                     @Override
                     public void accept(StockDataBean stockDataBean) {
@@ -117,8 +113,32 @@ public class StockTableModel extends TableFieldInfoModel {
         persistStockConfig();
     }
 
-    public void removeStock(String code) {
+    /**
+     * 删除第几行
+     */
+    public void remove(int rowIndex) {
+        if (rowIndex < 0) {
+            return;
+        }
+        String stockCode = getStockCode(rowIndex);
+        removeStock(stockCode);
+    }
+
+    private void removeStock(String code) {
         stockDataBeanMap.remove(code);
+        persistStockConfig();
+    }
+
+    /**
+     * 将第几行添加到固定区域
+     */
+    public void pinTop(int rowIndex) {
+        if (rowIndex < 0) {
+            return;
+        }
+        String stockCode = getStockCode(rowIndex);
+        StockDataBean stockDataBean = stockDataBeanMap.get(stockCode);
+        stockDataBean.setPinTop(true);
         persistStockConfig();
     }
 
@@ -126,7 +146,7 @@ public class StockTableModel extends TableFieldInfoModel {
     private void persistStockConfig() {
         // 持久化
         Set<StockConfig> list = stockDataBeanMap.values().stream()
-                .map(t -> new StockConfig(t.getMaskName(), t.getAlias(), t.getCode(), t.getIndex()))
+                .map(t -> new StockConfig(t.getMaskName(), t.getAlias(), t.getCode(), t.getIndex(), t.isPinTop()))
                 .collect(Collectors.toSet());
         GlobalConfigManager.getInstance().persistStockConfig(list);
     }
