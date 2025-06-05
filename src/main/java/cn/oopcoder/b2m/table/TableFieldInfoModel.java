@@ -78,13 +78,13 @@ public class TableFieldInfoModel extends DefaultTableModel {
                         // 涨
                         Color color = colors.get(0);
                         if (color != null) {
-                            setForeground(JBColor.RED);
+                            setForeground(color);
                         }
                     } else if (doubleValue < 0 && colors.size() > 1) {
                         // 跌
                         Color color = colors.get(1);
                         if (color != null) {
-                            setForeground(JBColor.GREEN);
+                            setForeground(color);
                         }
                     } else if (doubleValue == 0 && colors.size() > 2) {
                         // 平

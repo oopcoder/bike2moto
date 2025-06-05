@@ -28,6 +28,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 
 import java.awt.*;
@@ -190,9 +191,9 @@ public class StockWindow {
 
     private void beautifyTable() {
         // 不显示网格线
-        table.setShowGrid(false);
-        // 设置表格条纹（斑马线）
-        table.setStriped(!jbCheckBox.isSelected());
+        table.setShowGrid(!jbCheckBox.isSelected());
+        // 设置表格条纹（斑马线） darcula 主题才有显示，其他主题可能不明显，看不出来
+        // table.setStriped(!jbCheckBox.isSelected());
     }
 
     private void createModel() {

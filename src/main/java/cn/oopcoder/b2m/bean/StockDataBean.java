@@ -1,12 +1,10 @@
 package cn.oopcoder.b2m.bean;
 
-import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.config.StockConfig;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.weisj.jsvg.O;
 import com.intellij.ui.JBColor;
 
 import lombok.AllArgsConstructor;
