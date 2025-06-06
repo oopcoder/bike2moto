@@ -138,7 +138,8 @@ public class StockTableModel extends TableFieldInfoModel {
         return stockDataBeanMap.values().stream()
                 .sorted(Comparator.comparing(StockDataBean::isPinTop)
                         .reversed()
-                        .thenComparing(StockDataBean::getIndex))
+                        .thenComparing(StockDataBean::getIndex)
+                        .thenComparing(StockDataBean::getCode))
                 .toList();
     }
 
@@ -150,7 +151,7 @@ public class StockTableModel extends TableFieldInfoModel {
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
         stockDataBeanMap.values().stream()
                 .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
-                .min(Comparator.comparingInt(StockDataBean::getIndex))
+                .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
                 .filter(s -> !s.getCode().equals(stockDataBean.getCode()))
                 .ifPresent(top -> {
                     stockDataBean.setIndex(top.getIndex() - 1);
@@ -166,7 +167,7 @@ public class StockTableModel extends TableFieldInfoModel {
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
         stockDataBeanMap.values().stream()
                 .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
-                .max(Comparator.comparingInt(StockDataBean::getIndex))
+                .max(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
                 .filter(s -> !s.getCode().equals(stockDataBean.getCode()))
                 .ifPresent(bottom -> {
                     stockDataBean.setIndex(bottom.getIndex() + 1);
@@ -182,14 +183,18 @@ public class StockTableModel extends TableFieldInfoModel {
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
         List<StockDataBean> list = stockDataBeanMap.values().stream()
                 .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
-                .sorted(Comparator.comparing(StockDataBean::getIndex))
+                .sorted(Comparator.comparing(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
                 .toList();
         int index = list.indexOf(stockDataBean);
 
         if (index > 0) {
             StockDataBean preStockDataBean = list.get(index - 1);
-            stockDataBean.setIndex(preStockDataBean.getIndex() - 1);
 
+            int nextIndex = preStockDataBean.getIndex();
+            int currentIndex = stockDataBean.getIndex();
+
+            stockDataBean.setIndex(nextIndex);
+            preStockDataBean.setIndex(currentIndex);
             persistStockConfig();
         }
 
@@ -200,14 +205,18 @@ public class StockTableModel extends TableFieldInfoModel {
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
         List<StockDataBean> list = stockDataBeanMap.values().stream()
                 .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
-                .sorted(Comparator.comparing(StockDataBean::getIndex))
+                .sorted(Comparator.comparing(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
                 .toList();
         int index = list.indexOf(stockDataBean);
 
         if (index < list.size() - 1) {
             StockDataBean nextStockDataBean = list.get(index + 1);
-            stockDataBean.setIndex(nextStockDataBean.getIndex() + 1);
 
+            int nextIndex = nextStockDataBean.getIndex();
+            int currentIndex = stockDataBean.getIndex();
+
+            stockDataBean.setIndex(nextIndex);
+            nextStockDataBean.setIndex(currentIndex);
             persistStockConfig();
         }
     }
@@ -226,13 +235,13 @@ public class StockTableModel extends TableFieldInfoModel {
             // 取消固定
             stockDataBeanMap.values().stream()
                     .filter(s -> !s.isPinTop())
-                    .min(Comparator.comparingInt(StockDataBean::getIndex))
+                    .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
                     .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
         } else {
             // 固定
             stockDataBeanMap.values().stream()
                     .filter(StockDataBean::isPinTop)
-                    .min(Comparator.comparingInt(StockDataBean::getIndex))
+                    .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
                     .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
         }
         stockDataBean.setPinTop(!pinTop);
