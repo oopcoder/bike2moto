@@ -71,18 +71,41 @@ public class StockWindow {
                         }
                     }
                 })
-
                 .setRemoveActionName("删除").setRemoveAction(anAction -> { // 删除按钮回调
                     tableModel.remove(table.convertRowIndexToModel(table.getSelectedRow()));
                 })
-
                 .setEditActionName("固定").setEditAction(anAction -> {
                     // 暂时用这个按钮实现
                     tableModel.togglePinTop(table.convertRowIndexToModel(table.getSelectedRow()));
                 })
+                .setMoveUpActionName("上移").setMoveUpAction(anAction -> {
+                    tableModel.moveUp(table.convertRowIndexToModel(table.getSelectedRow()));
+                })
+                .setMoveDownActionName("下移").setMoveDownAction(anAction -> {
+                    tableModel.moveDown(table.convertRowIndexToModel(table.getSelectedRow()));
+                })
+                .addExtraAction(new AnActionButton(Const.MOVE_TOP, AllIcons.Actions.Upload) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        tableModel.moveTop(table.convertRowIndexToModel(table.getSelectedRow()));
+                    }
 
-                .setMoveUpActionName("上移").setMoveUpAction(anAction -> { /* 上移逻辑 */ })
-                .setMoveDownActionName("上移").setMoveDownAction(anAction -> { /* 下移逻辑 */ })
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
+                })
+                .addExtraAction(new AnActionButton(Const.MOVE_BOTTOM, AllIcons.Plugins.Downloads) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        tableModel.moveBottom(table.convertRowIndexToModel(table.getSelectedRow()));
+                    }
+
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
+                })
                 .addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
@@ -251,14 +274,16 @@ public class StockWindow {
 
     public void configRenderer(List<TableFieldInfo> tableFieldInfos) {
 
+        // todo 会导致默认的排序箭头不见了，暂时移除
+
         // 设置表头渲染器
-        table.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
-            {
-                setHorizontalAlignment(SwingConstants.CENTER);
-                setVerticalAlignment(SwingConstants.CENTER);
-                setFont(getFont().deriveFont(Font.BOLD));
-            }
-        });
+        // table.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
+        //     {
+        //         setHorizontalAlignment(SwingConstants.CENTER);
+        //         setVerticalAlignment(SwingConstants.CENTER);
+        //         setFont(getFont().deriveFont(Font.BOLD));
+        //     }
+        // });
 
         // 可以设置默认的渲染器，优先使用每列定制的渲染器
         // table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
