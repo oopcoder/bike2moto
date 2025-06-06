@@ -16,7 +16,7 @@ import java.util.Vector;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.swing.JTable;
+import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
@@ -71,13 +71,13 @@ public class TableFieldInfoModel extends DefaultTableModel {
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                                boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
-                    System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
-                    System.out.println("handleBackground() 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
+                    // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
+                    // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
-                    // 先后顺序还是有点区别，比如选中的时候这里面改了文本的颜色，但是下面自定义的
-                    // 前景色把他覆盖了，所以导致选中和未选中的颜色都是一样的
+                    // 先后顺序还是有点区别，比如选中的时候这里面改了文本的颜色，
+                    // 但是下面自定义的前景色把他覆盖了，所以导致选中和未选中的颜色都是一样的
                     Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, viewRowIndex, viewColumnIndex);
-                    System.out.println("handleBackground() 背景中： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
+                    // System.out.println(" 背景中： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
                     if (!tableFieldInfo.displayColor().isEmpty()) {
                         // 设置文本颜色
@@ -85,8 +85,17 @@ public class TableFieldInfoModel extends DefaultTableModel {
                     }
 
                     // 设置行背景色
-                    handleBackground(component, table, isSelected, viewRowIndex, viewColumnIndex);
-                    System.out.println("handleBackground() 背景后： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
+                    handleBackground(component, table, isSelected, hasFocus, viewRowIndex, viewColumnIndex);
+                    // System.out.println(" 背景后： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
+
+                    // System.out.println(" select: " + isSelected + ", focus: " + hasFocus + ", row: " + viewRowIndex + ", column: " + viewColumnIndex);
+                    if (hasFocus) {
+                        // 被点击的单元格
+                        // hasFocus/isSelected 不是同步的，比如代码设置选中，或者多选（Ctrl+鼠标选择），其中一行只有select，没有focus
+
+                        // 聚焦时更改边框和大小，默认颜色 new JBColor(0x589DF6, 0x4A88C7)
+                        setBorder(BorderFactory.createLineBorder(JBColor.YELLOW, 3));
+                    }
                     return component;
                 }
             });
@@ -119,9 +128,12 @@ public class TableFieldInfoModel extends DefaultTableModel {
         component.setForeground(null);
     }
 
-    private void handleBackground(Component component, JTable table, boolean isSelected, int viewRowIndex, int viewColumnIndex) {
+    private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
+                                  int viewRowIndex, int viewColumnIndex) {
+
         if (isSelected) {
-            System.out.println("被选中，不处理背景色");
+            // 被选中的行
+            // System.out.println("被选中，不处理背景色");
             return;
         }
 
@@ -129,7 +141,7 @@ public class TableFieldInfoModel extends DefaultTableModel {
         // 不设置的话，会延用上次渲染遗留的颜色，不是我们想要的颜色
         Color backgroundColor = getBackgroundColor(table.convertRowIndexToModel(viewRowIndex));
         component.setBackground(backgroundColor);
-        System.out.println("自定义，背景色彩: " + backgroundColor + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
+        // System.out.println("自定义背景颜色: " + backgroundColor + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
     }
 
     public Color getBackgroundColor(int modelRowIndex) {
