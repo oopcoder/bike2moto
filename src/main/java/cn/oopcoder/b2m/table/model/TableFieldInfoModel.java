@@ -1,5 +1,6 @@
 package cn.oopcoder.b2m.table.model;
 
+import com.intellij.ui.JBColor;
 import com.intellij.ui.table.JBTable;
 
 import java.awt.Color;
@@ -56,89 +57,79 @@ public class TableFieldInfoModel extends DefaultTableModel {
 
         setColumnIdentifiers(displayNameList.toArray());
 
-        // 设置默认的渲染器
-        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                    boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
-                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, viewRowIndex,
-                        viewColumnIndex);
+        // 可以设置默认的渲染器，优先使用每列定制的渲染器
+        // table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+        // });
 
-                // 设置行背景色
-                handleBackground(this, table, isSelected, viewRowIndex);
-                return this;
-
-            }
-
-        });
-
-        List<TableFieldInfo> colorTableFieldInfo = tableFieldInfoList.stream()
-                .filter(tableFieldInfo -> !tableFieldInfo.displayColor().isEmpty())
-                .toList();
-
-        for (TableFieldInfo tableFieldInfo : colorTableFieldInfo) {
+        for (TableFieldInfo tableFieldInfo : tableFieldInfoList) {
 
             TableColumn tableColumn = table.getColumn(tableFieldInfo.displayName());
             // 定制
             tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
+
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+
+                    System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
+                    System.out.println("handleBackground() 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
                     // 先后顺序还是有点区别，比如选中的时候这里面改了文本的颜色，但是下面自定义的
                     // 前景色把他覆盖了，所以导致选中和未选中的颜色都是一样的
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, viewRowIndex,
-                            viewColumnIndex);
+                    Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, viewRowIndex, viewColumnIndex);
+                    System.out.println("handleBackground() 背景中： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
+
+                    if (!tableFieldInfo.displayColor().isEmpty()) {
+                        // 设置文本颜色
+                        handleForeground(component, table, value, tableFieldInfo.displayColor());
+                    }
 
                     // 设置行背景色
-                    handleBackground(this, table, isSelected, viewRowIndex);
-
-                    // 设置前景色
-                    double doubleValue = NumUtil.toDouble(Objects.toString(value).replace("%", ""));
-                    List<Color> colors = tableFieldInfo.displayColor();
-                    if (doubleValue > 0 && colors.size() > 0) {
-                        // 涨
-                        Color color = colors.get(0);
-                        if (color != null) {
-                            setForeground(color);
-                        }
-                    } else if (doubleValue < 0 && colors.size() > 1) {
-                        // 跌
-                        Color color = colors.get(1);
-                        if (color != null) {
-                            setForeground(color);
-                        }
-                    } else if (doubleValue == 0 && colors.size() > 2) {
-                        // 平
-                        Color color = colors.get(2);
-                        if (color != null) {
-                            setForeground(color);
-                        }
-                    } else {
-                        // 正常不会出现，除非没有配置或者bug
-                        // 注意！！！这个地方是用table的颜色
-                        setForeground(table.getForeground());
-                    }
-                    return this;
+                    handleBackground(component, table, isSelected, viewRowIndex, viewColumnIndex);
+                    System.out.println("handleBackground() 背景后： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
+                    return component;
                 }
             });
         }
     }
 
-    private void handleBackground(Component component, JTable table, boolean isSelected, int viewRowIndex) {
-        if (isSelected) {
+    private void handleForeground(Component component, JTable table, Object value, List<Color> colors) {
+        // 设置前景色
+        double doubleValue = NumUtil.toDouble(Objects.toString(value).replace("%", ""));
+        if (doubleValue > 0 && !colors.isEmpty()) {
+            // 涨
+            component.setForeground(colors.getFirst());
             return;
         }
-        // 设置行背景色
-        Color backgroundColor = getBackgroundColor(table.convertRowIndexToModel(viewRowIndex));
 
-        if (backgroundColor != null) {
-            // 使用自定义颜色
-            component.setBackground(backgroundColor);
+        if (doubleValue < 0 && colors.size() > 1) {
+            // 跌
+            component.setForeground(colors.get(1));
             return;
         }
-        // 注意！！！这个地方是用table的颜色
-        component.setBackground(table.getBackground());
+
+        if (doubleValue == 0 && colors.size() > 2) {
+            // 平
+            component.setForeground(colors.get(2));
+            return;
+        }
+
+        // 正常不会出现，除非没有配置或者bug
+        // 注意！！！这个地方必须调用
+        component.setForeground(null);
+    }
+
+    private void handleBackground(Component component, JTable table, boolean isSelected, int viewRowIndex, int viewColumnIndex) {
+        if (isSelected) {
+            System.out.println("被选中，不处理背景色");
+            return;
+        }
+
+        // 设置 null 和 不设置是有区别的，看源码注释，设置 null 是继承父类的颜色
+        // 不设置的话，会延用上次渲染遗留的颜色，不是我们想要的颜色
+        Color backgroundColor = getBackgroundColor(table.convertRowIndexToModel(viewRowIndex));
+        component.setBackground(backgroundColor);
+        System.out.println("自定义，背景色彩: " + backgroundColor + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
     }
 
     public Color getBackgroundColor(int modelRowIndex) {
