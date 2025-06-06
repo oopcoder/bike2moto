@@ -180,10 +180,4 @@ public class StockTableModel extends TableFieldInfoModel {
         // 修改过数据，刷新一下
         refresh();
     }
-
-    @Override
-    public Color getBackgroundColor(int modelRowIndex) {
-        return isPinTop(modelRowIndex) ? JBColor.LIGHT_GRAY : null;
-    }
-
 }
