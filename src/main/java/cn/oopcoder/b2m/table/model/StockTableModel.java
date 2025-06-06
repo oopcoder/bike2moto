@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.swing.table.TableColumn;
@@ -146,9 +147,22 @@ public class StockTableModel extends TableFieldInfoModel {
             return;
         }
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
-        stockDataBean.setPinTop(!stockDataBean.isPinTop());
+        boolean pinTop = stockDataBean.isPinTop();
 
-        // todo index 变成最小值
+        if (pinTop) {
+            // 取消固定
+            stockDataBeanMap.values().stream()
+                    .filter(s -> !s.isPinTop())
+                    .min(Comparator.comparingInt(StockDataBean::getIndex))
+                    .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
+        } else {
+            // 固定
+            stockDataBeanMap.values().stream()
+                    .filter(StockDataBean::isPinTop)
+                    .min(Comparator.comparingInt(StockDataBean::getIndex))
+                    .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
+        }
+        stockDataBean.setPinTop(!pinTop);
         persistStockConfig();
     }
 
