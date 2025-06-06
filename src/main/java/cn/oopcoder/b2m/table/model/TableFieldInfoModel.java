@@ -3,8 +3,7 @@ package cn.oopcoder.b2m.table.model;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.table.JBTable;
 
-import java.awt.Color;
-import java.awt.Component;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -66,6 +65,10 @@ public class TableFieldInfoModel extends DefaultTableModel {
             TableColumn tableColumn = table.getColumn(tableFieldInfo.displayName());
             // 定制
             tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
+                {
+                    // 设置水平对齐方式为居中
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                }
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
@@ -100,6 +103,15 @@ public class TableFieldInfoModel extends DefaultTableModel {
                 }
             });
         }
+
+        // 设置表头渲染器
+        table.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
+            {
+                setHorizontalAlignment(SwingConstants.CENTER);
+                setVerticalAlignment(SwingConstants.CENTER);
+                // setFont(getFont().deriveFont(Font.BOLD));
+            }
+        });
     }
 
     private void handleForeground(Component component, JTable table, Object value, List<Color> colors) {

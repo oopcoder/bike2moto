@@ -161,7 +161,7 @@ public class StockTableModel extends TableFieldInfoModel {
         // return pinTopMap.get(stockCode);
 
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
-        System.out.println(modelRowIndex + " isPinTop(): " + stockDataBean.isPinTop() + " " + stockDataBean.getCode());
+        // System.out.println(modelRowIndex + " isPinTop(): " + stockDataBean.isPinTop() + " " + stockDataBean.getCode());
         return stockDataBean.isPinTop();
     }
 
