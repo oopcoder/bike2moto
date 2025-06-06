@@ -20,7 +20,7 @@ public class StockConfig {
 
     private String code;
 
-    private int index = 0;
+    // private int index = 0;
 
     // 固定在顶部
     private boolean pinTop = false;

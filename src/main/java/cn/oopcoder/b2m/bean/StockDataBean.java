@@ -39,6 +39,16 @@ public class StockDataBean {
     public static final String STOCK_CODE_FIELD_NAME = "code";
     public static final String CHANGE_PERCENT_FIELD_NAME = "changePercent";
 
+    // 调试用，不需要时直接注释
+    // @TableColumn(name = "行号", order = 4)
+    private int index;
+
+    @TableColumn(name = "名称", order = 6, showMode = {Normal})
+    private String name;
+
+    @TableColumn(name = "编码", order = 8)
+    private String code;
+
     // 隐蔽模式名，最好是英文
     @TableColumn(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask", editable = true)
     private String maskName;
@@ -63,20 +73,11 @@ public class StockDataBean {
     @TableColumn(name = "最低价", order = 40, enableNumberComparator = true)
     private String low;
 
-    @TableColumn(name = "编码", order = 45)
-    private String code;
-
-    @TableColumn(name = "排序", order = 50, editable = true)
-    private int index = 0;
-
-    @TableColumn(name = "名称", order = 55, showMode = {Normal})
-    private String name;
-
     @TableColumn(name = "时间", order = 60, showMode = {Normal})
     private String time;
 
     // 固定在顶部
-    @TableColumn(name = "固定", order = 45)
+    // @TableColumn(name = "固定", order = 45)
     private boolean pinTop = false;
 
     public static List<TableFieldInfo> hiddenTableFields = getTableColumns(Hidden);
@@ -122,12 +123,12 @@ public class StockDataBean {
     //     this.code = code;
     // }
 
-    public StockDataBean(StockConfig stockConfig) {
+    public StockDataBean(StockConfig stockConfig, int index) {
         this.code = stockConfig.getCode();
         this.maskName = stockConfig.getMaskName();
         this.alias = stockConfig.getAlias();
-        this.index = stockConfig.getIndex();
         this.pinTop = stockConfig.isPinTop();
+        this.index = index;
     }
 
     public Object getFieldValue(String fieldName) {

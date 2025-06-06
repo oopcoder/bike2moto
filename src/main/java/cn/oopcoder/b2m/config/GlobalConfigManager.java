@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,7 @@ import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
  */
 
 public class GlobalConfigManager {
+
 
     private static final GlobalConfigManager ourInstance = new GlobalConfigManager();
 
@@ -114,7 +116,7 @@ public class GlobalConfigManager {
         persist();
     }
 
-    public void persistStockConfig(Set<StockConfig> stockConfig) {
+    public void persistStockConfig(List<StockConfig> stockConfig) {
         if (config == null) {
             config = new GlobalConfig();
         }
@@ -122,13 +124,17 @@ public class GlobalConfigManager {
         persist();
     }
 
-    public Set<StockConfig> getStockConfig() {
+    public List<StockConfig> getStockConfig() {
         if (config == null || config.getStockConfig() == null || config.getStockConfig().isEmpty()) {
             String json = FileUtil.readString("config/DefaultStockConfig.json");
-            Set<StockConfig> stockDataBeanList = JacksonUtil.fromJson(json, new TypeReference<>() {
+            List<StockConfig> stockDataBeanList = JacksonUtil.fromJson(json, new TypeReference<>() {
             });
-            persistStockConfig(stockDataBeanList);
-            return stockDataBeanList;
+            assert stockDataBeanList != null;
+            List<StockConfig> uniqueList = stockDataBeanList.stream()
+                    .distinct()
+                    .collect(Collectors.toList());
+            persistStockConfig(uniqueList);
+            return uniqueList;
         }
         return config.getStockConfig();
     }

@@ -17,6 +17,6 @@ public class GlobalConfig {
 
     List<String> stockTableColumn;
 
-    Set<StockConfig> stockConfig;
+    List<StockConfig> stockConfig;
 
 }

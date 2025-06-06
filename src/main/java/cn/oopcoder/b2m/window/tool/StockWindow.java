@@ -10,6 +10,7 @@ import cn.oopcoder.b2m.table.listener.TableColumnModelAdapter;
 import cn.oopcoder.b2m.table.listener.ToggleRowSortMouseListener;
 
 import cn.oopcoder.b2m.utils.NumUtil;
+
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -58,6 +59,8 @@ public class StockWindow {
     private void createUI() {
         table = new JBTable();
 
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator
                 .setAddActionName("新增").setAddAction(anAction -> { // 添加按钮回调
@@ -65,7 +68,8 @@ public class StockWindow {
                     String stockCode = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
                     if (stockCode != null && !stockCode.trim().isEmpty()) {
                         try {
-                            tableModel.addStock(stockCode);
+                            int modelRowIndex = tableModel.addStock(stockCode);
+                            selectRow(modelRowIndex);
                         } catch (Exception e) {
                             JOptionPane.showMessageDialog(rootPanel, e.getLocalizedMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                         }
@@ -76,18 +80,22 @@ public class StockWindow {
                 })
                 .setEditActionName("固定").setEditAction(anAction -> {
                     // 暂时用这个按钮实现
-                    tableModel.togglePinTop(table.convertRowIndexToModel(table.getSelectedRow()));
+                    int modelRowIndex = tableModel.togglePinTop(table.convertRowIndexToModel(table.getSelectedRow()));
+                    selectRow(modelRowIndex);
                 })
                 .setMoveUpActionName("上移").setMoveUpAction(anAction -> {
-                    tableModel.moveUp(table.convertRowIndexToModel(table.getSelectedRow()));
+                    int modelRowIndex = tableModel.moveUp(table.convertRowIndexToModel(table.getSelectedRow()));
+                    selectRow(modelRowIndex);
                 })
                 .setMoveDownActionName("下移").setMoveDownAction(anAction -> {
-                    tableModel.moveDown(table.convertRowIndexToModel(table.getSelectedRow()));
+                    int modelRowIndex = tableModel.moveDown(table.convertRowIndexToModel(table.getSelectedRow()));
+                    selectRow(modelRowIndex);
                 })
                 .addExtraAction(new AnActionButton(Const.MOVE_TOP, AllIcons.Actions.Upload) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
-                        tableModel.moveTop(table.convertRowIndexToModel(table.getSelectedRow()));
+                        int modelRowIndex = tableModel.moveTop(table.convertRowIndexToModel(table.getSelectedRow()));
+                        selectRow(modelRowIndex);
                     }
 
                     @Override
@@ -98,7 +106,8 @@ public class StockWindow {
                 .addExtraAction(new AnActionButton(Const.MOVE_BOTTOM, AllIcons.Plugins.Downloads) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
-                        tableModel.moveBottom(table.convertRowIndexToModel(table.getSelectedRow()));
+                        int modelRowIndex = tableModel.moveBottom(table.convertRowIndexToModel(table.getSelectedRow()));
+                        selectRow(modelRowIndex);
                     }
 
                     @Override
@@ -212,6 +221,13 @@ public class StockWindow {
 
     }
 
+    private void selectRow(int modelRowIndex) {
+        if (modelRowIndex >= 0) {
+            int viewRowIndex = table.convertRowIndexToView(modelRowIndex);
+            table.setRowSelectionInterval(viewRowIndex, viewRowIndex); // 选中单行
+        }
+    }
+
     private void beautifyTable() {
         // 不显示网格线
         // table.setShowGrid(!jbCheckBox.isSelected());
@@ -233,7 +249,7 @@ public class StockWindow {
         tableModel.configRowSorter();
 
         // 配置要监控的股票
-        tableModel.configStockDataBeanMap(GlobalConfigManager.getInstance().getStockConfig());
+        tableModel.configStockDataBean(GlobalConfigManager.getInstance().getStockConfig());
 
         tableModel.addTableModelListener(new TableModelListener() {
             @Override
@@ -301,7 +317,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -361,7 +377,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-                                  int viewRowIndex, int viewColumnIndex) {
+            int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");
@@ -374,7 +390,6 @@ public class StockWindow {
         component.setBackground(backgroundColor);
         // System.out.println("自定义背景颜色: " + backgroundColor + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
     }
-
 
     public void toggleScheduledJob(boolean start) {
         System.out.println("启停定时任务: " + start);
@@ -394,7 +409,7 @@ public class StockWindow {
     }
 
     public void refreshModel() {
-        tableModel.refresh();
+        tableModel.refresh(true);
         SwingUtilities.invokeLater(() -> refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
     }
 
