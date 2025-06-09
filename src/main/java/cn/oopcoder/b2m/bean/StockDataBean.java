@@ -38,6 +38,7 @@ public class StockDataBean {
 
     public static final String STOCK_CODE_FIELD_NAME = "code";
     public static final String CHANGE_PERCENT_FIELD_NAME = "changePercent";
+    public static final String CHANGE_FIELD_NAME = "change";
 
     // 调试用，不需要时直接注释
     // @TableColumn(name = "行号", order = 4)

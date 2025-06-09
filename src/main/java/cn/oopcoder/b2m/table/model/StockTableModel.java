@@ -2,6 +2,7 @@ package cn.oopcoder.b2m.table.model;
 
 import cn.oopcoder.b2m.config.StockConfig;
 
+import cn.oopcoder.b2m.consts.ColorHexConst;
 import cn.oopcoder.b2m.utils.StockDataUtil;
 
 import com.intellij.ui.table.JBTable;
@@ -23,6 +24,7 @@ import cn.oopcoder.b2m.config.GlobalConfigManager;
 
 import org.jetbrains.annotations.NotNull;
 
+import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
@@ -91,6 +93,11 @@ public class StockTableModel extends TableFieldInfoModel {
                 if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
                     fieldValue = fieldValue + "%";
                 }
+                if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName) || CHANGE_FIELD_NAME.equals(fieldName)) {
+                    if (!fieldValue.toString().startsWith("-")) {
+                        fieldValue = "+" + fieldValue;
+                    }
+                }
                 vector.addElement(fieldValue);
             }
             addRow(vector);
@@ -98,13 +105,14 @@ public class StockTableModel extends TableFieldInfoModel {
         fireTableRowsUpdated(0, table.getModel().getRowCount() - 1);
     }
 
+    @Override
     public void setValueAt(Object aValue, int modelRowIndex, int modelColumnIndex) {
         super.setValueAt(aValue, modelRowIndex, modelColumnIndex);
         System.out.println("setValueAt(): " + aValue);
 
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
 
-        String fieldName = tableFieldInfoList.get(modelColumnIndex).fieldName();
+        String fieldName = getTableFieldInfo(modelColumnIndex).fieldName();
         stockDataBean.setFieldValue(fieldName, aValue);
 
         persistStockConfig(false);

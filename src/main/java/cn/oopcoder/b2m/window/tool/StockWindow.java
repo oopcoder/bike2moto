@@ -46,7 +46,7 @@ public class StockWindow {
     public JPanel rootPanel;
     private JBTable table;
     private JBLabel refreshTimeLabel;
-    private JBCheckBox jbCheckBox;
+    private JBCheckBox showModeCheckBox;
     private volatile boolean refreshing = false;
     private StockTableModel tableModel;
 
@@ -59,7 +59,10 @@ public class StockWindow {
     private void createUI() {
         table = new JBTable();
 
+        // 设置为单选模式 用户只能选中一行
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        // 禁用所有自动调整列宽的行为
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator
@@ -172,17 +175,17 @@ public class StockWindow {
         refreshTimeLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
         toolbarDecorator.getActionsPanel().add(refreshTimeLabel, BorderLayout.EAST);
 
-        jbCheckBox = new JBCheckBox();
-        jbCheckBox.setToolTipText("隐蔽模式");
-        jbCheckBox.setSelected(true);
-        jbCheckBox.addActionListener(e -> {
+        showModeCheckBox = new JBCheckBox();
+        showModeCheckBox.setToolTipText("隐蔽模式");
+        showModeCheckBox.setSelected(true);
+        showModeCheckBox.addActionListener(e -> {
             beautifyTable();
-            GlobalConfigManager.getInstance().setShowMode(jbCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
+            GlobalConfigManager.getInstance().setShowMode(showModeCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
             createModel();
         });
         beautifyTable();
 
-        toolbarDecorator.getActionsPanel().add(jbCheckBox, BorderLayout.WEST);
+        toolbarDecorator.getActionsPanel().add(showModeCheckBox, BorderLayout.WEST);
 
         table.getColumnModel().addColumnModelListener(new TableColumnModelAdapter() {
 
@@ -305,9 +308,16 @@ public class StockWindow {
         // table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
         // });
 
+
+        boolean selected = showModeCheckBox.isSelected();
+
         for (TableFieldInfo tableFieldInfo : tableFieldInfos) {
 
             TableColumn tableColumn = table.getColumn(tableFieldInfo.displayName());
+
+            // 设置默认的列宽，源码不建议使用setWidth()方法
+            tableColumn.setPreferredWidth(selected ? 50 : 90);
+
             // 定制
             tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
                 {
@@ -317,7 +327,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -377,7 +387,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-            int viewRowIndex, int viewColumnIndex) {
+                                  int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");
