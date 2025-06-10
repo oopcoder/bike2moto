@@ -17,7 +17,6 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.AnActionButton;
-import com.intellij.ui.CommonActionsPanel;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
@@ -57,6 +56,11 @@ public class StockWindow {
     private JBCheckBox showModeCheckBox;
     private volatile boolean refreshing = false;
     private StockTableModel tableModel;
+    private AnActionButton moveUpAction;
+    private AnActionButton moveDownAction;
+    private AnActionButton moveTopAction;
+    private AnActionButton moveBottomAction;
+    private AnActionButton pinTopAction;
 
     public StockWindow() {
         createUI();
@@ -72,7 +76,7 @@ public class StockWindow {
         // 禁用所有自动调整列宽的行为
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-        AnAction moveUpAction = new AnActionButton(Const.MOVE_UP, Icons.ICON_MOVE_UP) {
+        moveUpAction = new AnActionButton(Const.MOVE_UP, Icons.ICON_MOVE_UP) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 if (table.getSelectedRow() < 0) {
@@ -88,7 +92,7 @@ public class StockWindow {
             }
 
         };
-        AnAction moveDownAction = new AnActionButton(Const.MOVE_DOWN, Icons.ICON_MOVE_DOWN) {
+        moveDownAction = new AnActionButton(Const.MOVE_DOWN, Icons.ICON_MOVE_DOWN) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 if (table.getSelectedRow() < 0) {
@@ -103,7 +107,7 @@ public class StockWindow {
                 return ActionUpdateThread.EDT;
             }
         };
-        AnAction moveTopAction = new AnActionButton(Const.MOVE_TOP, Icons.ICON_MOVE_TOP) {
+        moveTopAction = new AnActionButton(Const.MOVE_TOP, Icons.ICON_MOVE_TOP) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 if (table.getSelectedRow() < 0) {
@@ -118,7 +122,7 @@ public class StockWindow {
                 return ActionUpdateThread.EDT;
             }
         };
-        AnAction moveBottomAction = new AnActionButton(Const.MOVE_BOTTOM, Icons.ICON_MOVE_BOTTOM) {
+        moveBottomAction = new AnActionButton(Const.MOVE_BOTTOM, Icons.ICON_MOVE_BOTTOM) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 if (table.getSelectedRow() < 0) {
@@ -133,7 +137,7 @@ public class StockWindow {
                 return ActionUpdateThread.EDT;
             }
         };
-        AnAction pinTopAction = new AnActionButton(Const.PIN_TOP, Icons.ICON_PIN_TOP) {
+        pinTopAction = new AnActionButton(Const.PIN_TOP, Icons.ICON_PIN_TOP) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 if (table.getSelectedRow() < 0) {
@@ -287,16 +291,24 @@ public class StockWindow {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {  // 避免多次触发
-                    int selectedRow = table.getSelectedRow();
-                    if (selectedRow != -1) {  // 确保有选中行
-                        System.out.println("选中行: " + selectedRow);
-                        // 获取选中行的数据
-                        Object value = table.getValueAt(selectedRow, 0);  // 第 0 列
-                        System.out.println("选中行数据: " + value);
-                    }
+                    enabledActionOnSelectRow();
                 }
             }
         });
+
+        enabledActionOnSelectRow();
+    }
+
+    private void enabledActionOnSelectRow() {
+        int selectedRow = table.getSelectedRow();
+        System.out.println("selectedRow: " + selectedRow);
+
+        boolean isSelect = selectedRow != -1;
+        moveUpAction.setEnabled(isSelect);
+        moveDownAction.setEnabled(isSelect);
+        moveTopAction.setEnabled(isSelect);
+        moveBottomAction.setEnabled(isSelect);
+        pinTopAction.setEnabled(isSelect);
     }
 
     private void selectRow(int modelRowIndex) {
@@ -304,6 +316,7 @@ public class StockWindow {
             int viewRowIndex = table.convertRowIndexToView(modelRowIndex);
             table.setRowSelectionInterval(viewRowIndex, viewRowIndex); // 选中单行
         }
+
     }
 
     private void beautifyTable() {
