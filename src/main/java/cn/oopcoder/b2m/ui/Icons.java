@@ -13,6 +13,9 @@ import javax.swing.*;
 
 public interface Icons {
 
+    Icon ICON_ADD = IconLoader.getIcon("/icons/add.svg", Icons.class);
+    Icon ICON_REMOVE = IconLoader.getIcon("/icons/remove.svg", Icons.class);
+
     Icon ICON_MOVE_TOP = IconLoader.getIcon("/icons/move_top.svg", Icons.class);
     Icon ICON_MOVE_BOTTOM = IconLoader.getIcon("/icons/move_bottom.svg", Icons.class);
 

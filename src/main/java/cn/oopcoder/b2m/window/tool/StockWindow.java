@@ -56,6 +56,8 @@ public class StockWindow {
     private volatile boolean refreshing = false;
     private volatile boolean selected = true;
     private StockTableModel tableModel;
+    private AnActionButton addAction;
+    private AnActionButton removeAction;
     private AnActionButton moveUpAction;
     private AnActionButton moveDownAction;
     private AnActionButton moveTopAction;
@@ -64,7 +66,6 @@ public class StockWindow {
 
     public StockWindow() {
         createUI();
-
         createModel();
     }
 
@@ -75,6 +76,43 @@ public class StockWindow {
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         // 禁用所有自动调整列宽的行为
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        addAction = new AnActionButton(ADD, Icons.ICON_ADD) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                // 弹窗新增逻辑
+                String stockCode = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
+                if (stockCode != null && !stockCode.trim().isEmpty()) {
+                    try {
+                        int modelRowIndex = tableModel.addStock(stockCode);
+                        selectRow(modelRowIndex);
+                    } catch (Exception exception) {
+                        JOptionPane.showMessageDialog(rootPanel, exception.getLocalizedMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+
+        };
+        removeAction = new AnActionButton(Const.REMOVE, Icons.ICON_REMOVE) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                if (table.getSelectedRow() < 0) {
+                    return;
+                }
+                tableModel.remove(table.convertRowIndexToModel(table.getSelectedRow()));
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+
+        };
 
         moveUpAction = new AnActionButton(Const.MOVE_UP, Icons.ICON_MOVE_UP) {
             @Override
@@ -200,47 +238,32 @@ public class StockWindow {
             }
         };
 
+        AnActionButton showModeAction = new AnActionButton(Const.SHOW_MODE_NORMAL, Icons.ICON_CHECKBOX_SELECTED) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                selected = !selected;
+                e.getPresentation().setIcon(selected ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED);
+                e.getPresentation().setText(selected ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN);
+
+                beautifyTable();
+                GlobalConfigManager.getInstance().setShowMode(selected ? ShowMode.Hidden : ShowMode.Normal);
+                createModel();
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator
-                .setAddActionName(ADD).setAddAction(anAction -> { // 添加按钮回调
-                    // 弹窗新增逻辑
-                    String stockCode = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
-                    if (stockCode != null && !stockCode.trim().isEmpty()) {
-                        try {
-                            int modelRowIndex = tableModel.addStock(stockCode);
-                            selectRow(modelRowIndex);
-                        } catch (Exception e) {
-                            JOptionPane.showMessageDialog(rootPanel, e.getLocalizedMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                })
-                .setRemoveActionName(REMOVE).setRemoveAction(anAction -> { // 删除按钮回调
-                    if (table.getSelectedRow() < 0) {
-                        return;
-                    }
-                    tableModel.remove(table.convertRowIndexToModel(table.getSelectedRow()));
-                })
+                .addExtraAction(showModeAction)
+                .addExtraActions(refreshTableAction, continueRefreshTableAction)
+                .addExtraActions(addAction, removeAction)
                 .addExtraActions(moveUpAction, moveDownAction)
                 .addExtraActions(moveTopAction, moveBottomAction)
                 .addExtraAction(pinTopAction)
-                .addExtraActions(refreshTableAction, continueRefreshTableAction, resetDefaultConfigAction)
-                .addExtraAction(new AnActionButton(Const.SHOW_MODE_NORMAL, AllIcons.Toolwindows.ToolWindowRun) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        selected = !selected;
-                        e.getPresentation().setIcon(selected ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED);
-                        e.getPresentation().setText(selected ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN);
-
-                        beautifyTable();
-                        GlobalConfigManager.getInstance().setShowMode(selected ? ShowMode.Hidden : ShowMode.Normal);
-                        createModel();
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
+                .addExtraActions(resetDefaultConfigAction)
                 .createPanel();
 
         rootPanel.add(tablePanel, BorderLayout.CENTER);
@@ -328,6 +351,8 @@ public class StockWindow {
         System.out.println("selectedRow: " + selectedRow);
 
         boolean isSelect = selectedRow != -1;
+
+        removeAction.setEnabled(isSelect);
         moveUpAction.setEnabled(isSelect);
         moveDownAction.setEnabled(isSelect);
         moveTopAction.setEnabled(isSelect);
@@ -438,7 +463,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -498,7 +523,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-            int viewRowIndex, int viewColumnIndex) {
+                                  int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");
