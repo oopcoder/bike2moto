@@ -19,7 +19,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
-import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 
@@ -53,8 +52,9 @@ public class StockWindow {
     public JPanel rootPanel;
     private JBTable table;
     private JBLabel refreshTimeLabel;
-    private JBCheckBox showModeCheckBox;
+    // private JBCheckBox showModeCheckBox;
     private volatile boolean refreshing = false;
+    private volatile boolean selected = true;
     private StockTableModel tableModel;
     private AnActionButton moveUpAction;
     private AnActionButton moveDownAction;
@@ -224,6 +224,23 @@ public class StockWindow {
                 .addExtraActions(moveTopAction, moveBottomAction)
                 .addExtraAction(pinTopAction)
                 .addExtraActions(refreshTableAction, continueRefreshTableAction, resetDefaultConfigAction)
+                .addExtraAction(new AnActionButton(Const.SHOW_MODE_NORMAL, AllIcons.Toolwindows.ToolWindowRun) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        selected = !selected;
+                        e.getPresentation().setIcon(selected ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED);
+                        e.getPresentation().setText(selected ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN);
+
+                        beautifyTable();
+                        GlobalConfigManager.getInstance().setShowMode(selected ? ShowMode.Hidden : ShowMode.Normal);
+                        createModel();
+                    }
+
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
+                })
                 .createPanel();
 
         rootPanel.add(tablePanel, BorderLayout.CENTER);
@@ -234,17 +251,24 @@ public class StockWindow {
         refreshTimeLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
         toolbarDecorator.getActionsPanel().add(refreshTimeLabel, BorderLayout.EAST);
 
-        showModeCheckBox = new JBCheckBox();
-        showModeCheckBox.setToolTipText("隐蔽模式");
-        showModeCheckBox.setSelected(true);
-        showModeCheckBox.addActionListener(e -> {
-            beautifyTable();
-            GlobalConfigManager.getInstance().setShowMode(showModeCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
-            createModel();
-        });
-        beautifyTable();
+        // showModeCheckBox = new JBCheckBox();
+        // showModeCheckBox.setToolTipText("隐蔽模式");
+        // // 默认图标
+        // showModeCheckBox.setOpaque(false); // 避免背景覆盖
+        // showModeCheckBox.setBorderPainted(false); // 移除边框
+        // showModeCheckBox.setIcon(Icons.ICON_CHECKBOX_UNSELECTED);
+        // showModeCheckBox.setSelectedIcon(Icons.ICON_CHECKBOX_SELECTED);
+        // showModeCheckBox.setTextIcon(Icons.ICON_CHECKBOX_SELECTED);
+        //
+        // showModeCheckBox.setSelected(true);
+        // showModeCheckBox.addActionListener(e -> {
+        //     beautifyTable();
+        //     GlobalConfigManager.getInstance().setShowMode(showModeCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
+        //     createModel();
+        // });
+        // toolbarDecorator.getActionsPanel().add(showModeCheckBox, BorderLayout.WEST);
 
-        toolbarDecorator.getActionsPanel().add(showModeCheckBox, BorderLayout.WEST);
+        beautifyTable();
 
         // 列移动监听
         table.getColumnModel().addColumnModelListener(new TableColumnModelAdapter() {
@@ -396,7 +420,7 @@ public class StockWindow {
         // table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
         // });
 
-        boolean selected = showModeCheckBox.isSelected();
+        // boolean selected = showModeCheckBox.isSelected();
 
         for (TableFieldInfo tableFieldInfo : tableFieldInfos) {
 

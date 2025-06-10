@@ -46,7 +46,7 @@ public class StockDataUtil {
                 stockDataBean.setHigh(values[33]);// 33
                 stockDataBean.setLow(values[34]);// 34
 
-                System.out.println("parse(): " + stockDataBean);
+                // System.out.println("parse(): " + stockDataBean);
 
             }
         } catch (Exception e) {
@@ -57,7 +57,7 @@ public class StockDataUtil {
 
     public static String getStockData(String codes) throws Exception {
         String result = HttpClientPool.getHttpClient().get("http://qt.gtimg.cn/q=" + codes);
-        System.out.println("http请求股票数据结果: " + result);
+        // System.out.println("http请求股票数据结果: " + result);
         return result;
     }
 

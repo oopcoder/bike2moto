@@ -22,5 +22,8 @@ public interface Icons {
     Icon ICON_PIN_TOP = IconLoader.getIcon("/icons/pin_top.svg", Icons.class);
     Icon ICON_RESET_DEFAULT_CONFIG = IconLoader.getIcon("/icons/reset_default_config.svg", Icons.class);
 
+    Icon ICON_CHECKBOX_SELECTED = IconLoader.getIcon("/icons/checkbox_selected.svg", Icons.class);
+    Icon ICON_CHECKBOX_UNSELECTED = IconLoader.getIcon("/icons/checkbox_unselected.svg", Icons.class);
+
 }
 
