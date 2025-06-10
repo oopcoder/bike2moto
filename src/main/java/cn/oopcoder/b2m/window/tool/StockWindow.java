@@ -14,8 +14,10 @@ import cn.oopcoder.b2m.utils.NumUtil;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.AnActionButton;
+import com.intellij.ui.CommonActionsPanel;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
@@ -29,6 +31,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
@@ -68,6 +72,130 @@ public class StockWindow {
         // 禁用所有自动调整列宽的行为
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
+        AnAction moveUpAction = new AnActionButton(Const.MOVE_UP, Icons.ICON_MOVE_UP) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                if (table.getSelectedRow() < 0) {
+                    return;
+                }
+                int modelRowIndex = tableModel.moveUp(table.convertRowIndexToModel(table.getSelectedRow()));
+                selectRow(modelRowIndex);
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+
+        };
+        AnAction moveDownAction = new AnActionButton(Const.MOVE_DOWN, Icons.ICON_MOVE_DOWN) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                if (table.getSelectedRow() < 0) {
+                    return;
+                }
+                int modelRowIndex = tableModel.moveDown(table.convertRowIndexToModel(table.getSelectedRow()));
+                selectRow(modelRowIndex);
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
+        AnAction moveTopAction = new AnActionButton(Const.MOVE_TOP, Icons.ICON_MOVE_TOP) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                if (table.getSelectedRow() < 0) {
+                    return;
+                }
+                int modelRowIndex = tableModel.moveTop(table.convertRowIndexToModel(table.getSelectedRow()));
+                selectRow(modelRowIndex);
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
+        AnAction moveBottomAction = new AnActionButton(Const.MOVE_BOTTOM, Icons.ICON_MOVE_BOTTOM) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                if (table.getSelectedRow() < 0) {
+                    return;
+                }
+                int modelRowIndex = tableModel.moveBottom(table.convertRowIndexToModel(table.getSelectedRow()));
+                selectRow(modelRowIndex);
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
+        AnAction pinTopAction = new AnActionButton(Const.PIN_TOP, Icons.ICON_PIN_TOP) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                if (table.getSelectedRow() < 0) {
+                    return;
+                }
+                int modelRowIndex = tableModel.togglePinTop(table.convertRowIndexToModel(table.getSelectedRow()));
+                selectRow(modelRowIndex);
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
+        AnAction refreshTableAction = new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                refreshModel();
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
+        AnAction continueRefreshTableAction = new AnActionButton(Const.CONTINUE_REFRESH_TABLE, AllIcons.Toolwindows.ToolWindowRun) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                refreshing = !refreshing;
+                e.getPresentation().setIcon(refreshing ? AllIcons.Actions.Pause : AllIcons.Toolwindows.ToolWindowRun);
+                e.getPresentation().setText(refreshing ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
+
+                toggleScheduledJob(refreshing);
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
+        AnAction resetDefaultConfigAction = new AnActionButton(Const.RESET_DEFAULT_CONFIG, Icons.ICON_RESET_DEFAULT_CONFIG) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                int result = JOptionPane.showConfirmDialog(
+                        rootPanel,
+                        "确定要恢复默认配置吗？此操作不可撤销！",
+                        "确认恢复",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+                if (result == JOptionPane.YES_OPTION) {
+                    GlobalConfigManager.getInstance().clear();
+                    createModel();
+                }
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
+
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator
                 .setAddActionName(ADD).setAddAction(anAction -> { // 添加按钮回调
@@ -83,115 +211,15 @@ public class StockWindow {
                     }
                 })
                 .setRemoveActionName(REMOVE).setRemoveAction(anAction -> { // 删除按钮回调
+                    if (table.getSelectedRow() < 0) {
+                        return;
+                    }
                     tableModel.remove(table.convertRowIndexToModel(table.getSelectedRow()));
                 })
-                .addExtraAction(new AnActionButton(Const.MOVE_UP, Icons.ICON_MOVE_UP) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        int modelRowIndex = tableModel.moveUp(table.convertRowIndexToModel(table.getSelectedRow()));
-                        selectRow(modelRowIndex);
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
-                .addExtraAction(new AnActionButton(Const.MOVE_DOWN, Icons.ICON_MOVE_DOWN) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        int modelRowIndex = tableModel.moveDown(table.convertRowIndexToModel(table.getSelectedRow()));
-                        selectRow(modelRowIndex);
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
-                .addExtraAction(new AnActionButton(Const.MOVE_TOP, Icons.ICON_MOVE_TOP) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        int modelRowIndex = tableModel.moveTop(table.convertRowIndexToModel(table.getSelectedRow()));
-                        selectRow(modelRowIndex);
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
-                .addExtraAction(new AnActionButton(Const.MOVE_BOTTOM, Icons.ICON_MOVE_BOTTOM) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        int modelRowIndex = tableModel.moveBottom(table.convertRowIndexToModel(table.getSelectedRow()));
-                        selectRow(modelRowIndex);
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
-                .addExtraAction(new AnActionButton(Const.PIN_TOP, Icons.ICON_PIN_TOP) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        int modelRowIndex = tableModel.togglePinTop(table.convertRowIndexToModel(table.getSelectedRow()));
-                        selectRow(modelRowIndex);
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
-                .addExtraAction(new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        refreshModel();
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
-                .addExtraAction(new AnActionButton(Const.CONTINUE_REFRESH_TABLE, AllIcons.Toolwindows.ToolWindowRun) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        refreshing = !refreshing;
-                        e.getPresentation().setIcon(refreshing ? AllIcons.Actions.Pause : AllIcons.Toolwindows.ToolWindowRun);
-                        e.getPresentation().setText(refreshing ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
-
-                        toggleScheduledJob(refreshing);
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
-                .addExtraAction(new AnActionButton(Const.RESET_DEFAULT_CONFIG, Icons.ICON_RESET_DEFAULT_CONFIG) {
-                    @Override
-                    public void actionPerformed(@NotNull AnActionEvent e) {
-                        int result = JOptionPane.showConfirmDialog(
-                                rootPanel,
-                                "确定要恢复默认配置吗？此操作不可撤销！",
-                                "确认恢复",
-                                JOptionPane.YES_NO_OPTION,
-                                JOptionPane.WARNING_MESSAGE
-                        );
-                        if (result == JOptionPane.YES_OPTION) {
-                            GlobalConfigManager.getInstance().clear();
-                            createModel();
-                        }
-                    }
-
-                    @Override
-                    public @NotNull ActionUpdateThread getActionUpdateThread() {
-                        return ActionUpdateThread.EDT;
-                    }
-                })
+                .addExtraActions(moveUpAction, moveDownAction)
+                .addExtraActions(moveTopAction, moveBottomAction)
+                .addExtraAction(pinTopAction)
+                .addExtraActions(refreshTableAction, continueRefreshTableAction, resetDefaultConfigAction)
                 .createPanel();
 
         rootPanel.add(tablePanel, BorderLayout.CENTER);
@@ -214,6 +242,7 @@ public class StockWindow {
 
         toolbarDecorator.getActionsPanel().add(showModeCheckBox, BorderLayout.WEST);
 
+        // 列移动监听
         table.getColumnModel().addColumnModelListener(new TableColumnModelAdapter() {
 
             @Override
@@ -236,19 +265,38 @@ public class StockWindow {
         tableHeader.addMouseListener(new ToggleRowSortMouseListener());
 
         // 添加编辑器监听
-        table.getDefaultEditor(Object.class).addCellEditorListener(new CellEditorListener() {
-            @Override
-            public void editingStopped(ChangeEvent e) {
-                // 可以在这里获取编辑后的值
-                System.out.println("单元格 编辑器监听");
-            }
+        table.getDefaultEditor(Object.class)
+                .addCellEditorListener(new CellEditorListener() {
+                    @Override
+                    public void editingStopped(ChangeEvent e) {
+                        // 可以在这里获取编辑后的值
+                        System.out.println("单元格 编辑器监听");
+                    }
 
+                    @Override
+                    public void editingCanceled(ChangeEvent e) {
+                        // 编辑取消处理
+                    }
+                });
+
+        // 获取行选择模型
+        ListSelectionModel selectionModel = table.getSelectionModel();
+
+        // 添加行选择监听器
+        selectionModel.addListSelectionListener(new ListSelectionListener() {
             @Override
-            public void editingCanceled(ChangeEvent e) {
-                // 编辑取消处理
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {  // 避免多次触发
+                    int selectedRow = table.getSelectedRow();
+                    if (selectedRow != -1) {  // 确保有选中行
+                        System.out.println("选中行: " + selectedRow);
+                        // 获取选中行的数据
+                        Object value = table.getValueAt(selectedRow, 0);  // 第 0 列
+                        System.out.println("选中行数据: " + value);
+                    }
+                }
             }
         });
-
     }
 
     private void selectRow(int modelRowIndex) {
@@ -335,7 +383,6 @@ public class StockWindow {
         // table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
         // });
 
-
         boolean selected = showModeCheckBox.isSelected();
 
         for (TableFieldInfo tableFieldInfo : tableFieldInfos) {
@@ -354,7 +401,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -414,7 +461,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-                                  int viewRowIndex, int viewColumnIndex) {
+            int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");
