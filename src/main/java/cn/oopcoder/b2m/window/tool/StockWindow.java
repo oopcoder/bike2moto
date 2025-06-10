@@ -9,6 +9,7 @@ import cn.oopcoder.b2m.table.model.StockTableModel;
 import cn.oopcoder.b2m.table.listener.TableColumnModelAdapter;
 import cn.oopcoder.b2m.table.listener.ToggleRowSortMouseListener;
 
+import cn.oopcoder.b2m.ui.Icons;
 import cn.oopcoder.b2m.utils.NumUtil;
 
 import com.intellij.icons.AllIcons;
@@ -41,6 +42,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static cn.oopcoder.b2m.consts.Const.ADD;
+import static cn.oopcoder.b2m.consts.Const.REMOVE;
+
 public class StockWindow {
 
     public JPanel rootPanel;
@@ -66,7 +70,7 @@ public class StockWindow {
 
         ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
         JPanel tablePanel = toolbarDecorator
-                .setAddActionName("新增").setAddAction(anAction -> { // 添加按钮回调
+                .setAddActionName(ADD).setAddAction(anAction -> { // 添加按钮回调
                     // 弹窗新增逻辑
                     String stockCode = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
                     if (stockCode != null && !stockCode.trim().isEmpty()) {
@@ -78,23 +82,34 @@ public class StockWindow {
                         }
                     }
                 })
-                .setRemoveActionName("删除").setRemoveAction(anAction -> { // 删除按钮回调
+                .setRemoveActionName(REMOVE).setRemoveAction(anAction -> { // 删除按钮回调
                     tableModel.remove(table.convertRowIndexToModel(table.getSelectedRow()));
                 })
-                .setEditActionName("固定").setEditAction(anAction -> {
-                    // 暂时用这个按钮实现
-                    int modelRowIndex = tableModel.togglePinTop(table.convertRowIndexToModel(table.getSelectedRow()));
-                    selectRow(modelRowIndex);
+                .addExtraAction(new AnActionButton(Const.MOVE_UP, Icons.ICON_MOVE_UP) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        int modelRowIndex = tableModel.moveUp(table.convertRowIndexToModel(table.getSelectedRow()));
+                        selectRow(modelRowIndex);
+                    }
+
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
                 })
-                .setMoveUpActionName("上移").setMoveUpAction(anAction -> {
-                    int modelRowIndex = tableModel.moveUp(table.convertRowIndexToModel(table.getSelectedRow()));
-                    selectRow(modelRowIndex);
+                .addExtraAction(new AnActionButton(Const.MOVE_DOWN, Icons.ICON_MOVE_DOWN) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        int modelRowIndex = tableModel.moveDown(table.convertRowIndexToModel(table.getSelectedRow()));
+                        selectRow(modelRowIndex);
+                    }
+
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
                 })
-                .setMoveDownActionName("下移").setMoveDownAction(anAction -> {
-                    int modelRowIndex = tableModel.moveDown(table.convertRowIndexToModel(table.getSelectedRow()));
-                    selectRow(modelRowIndex);
-                })
-                .addExtraAction(new AnActionButton(Const.MOVE_TOP, AllIcons.Actions.Upload) {
+                .addExtraAction(new AnActionButton(Const.MOVE_TOP, Icons.ICON_MOVE_TOP) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
                         int modelRowIndex = tableModel.moveTop(table.convertRowIndexToModel(table.getSelectedRow()));
@@ -106,10 +121,22 @@ public class StockWindow {
                         return ActionUpdateThread.EDT;
                     }
                 })
-                .addExtraAction(new AnActionButton(Const.MOVE_BOTTOM, AllIcons.Plugins.Downloads) {
+                .addExtraAction(new AnActionButton(Const.MOVE_BOTTOM, Icons.ICON_MOVE_BOTTOM) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
                         int modelRowIndex = tableModel.moveBottom(table.convertRowIndexToModel(table.getSelectedRow()));
+                        selectRow(modelRowIndex);
+                    }
+
+                    @Override
+                    public @NotNull ActionUpdateThread getActionUpdateThread() {
+                        return ActionUpdateThread.EDT;
+                    }
+                })
+                .addExtraAction(new AnActionButton(Const.PIN_TOP, Icons.ICON_PIN_TOP) {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        int modelRowIndex = tableModel.togglePinTop(table.convertRowIndexToModel(table.getSelectedRow()));
                         selectRow(modelRowIndex);
                     }
 
@@ -144,7 +171,7 @@ public class StockWindow {
                         return ActionUpdateThread.EDT;
                     }
                 })
-                .addExtraAction(new AnActionButton(Const.RESET_CONFIG, AllIcons.General.Reset) {
+                .addExtraAction(new AnActionButton(Const.RESET_DEFAULT_CONFIG, Icons.ICON_RESET_DEFAULT_CONFIG) {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
                         int result = JOptionPane.showConfirmDialog(
