@@ -7,9 +7,8 @@ import lombok.Data;
 import java.awt.Color;
 import java.util.List;
 
-
 @Data
-public class TableColumnInfo {
+public class ColumnDefinition {
 
     private String fieldName;
     private String displayName;
@@ -17,16 +16,18 @@ public class TableColumnInfo {
     private int order;
     private boolean enableNumberSorter;
     private boolean editable;
+    private Integer preferredWidth;
 
-    public TableColumnInfo(String fieldName, String displayName,
-                           List<Color> displayColor, int order,
-                           boolean enableNumberSorter, boolean editable) {
+    public ColumnDefinition(String fieldName, String displayName,
+            List<Color> displayColor, int order,
+            boolean enableNumberSorter, boolean editable, Integer preferredWidth) {
         this.fieldName = fieldName;
         this.displayName = displayName;
         this.displayColor = displayColor;
         this.order = order;
         this.enableNumberSorter = enableNumberSorter;
         this.editable = editable;
+        this.preferredWidth = preferredWidth;
     }
 
     @Override

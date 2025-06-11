@@ -19,7 +19,7 @@ import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
-import cn.oopcoder.b2m.bean.TableColumnInfo;
+import cn.oopcoder.b2m.bean.ColumnDefinition;
 import cn.oopcoder.b2m.utils.NumUtil;
 import lombok.Getter;
 
@@ -27,30 +27,30 @@ import lombok.Getter;
  * Created by oopcoder at 2025/6/2 15:32 .
  */
 
-public class TableColumnInfoModel extends DefaultTableModel {
+public class ColumnDefinitionTableModel extends DefaultTableModel {
 
     protected JBTable table;
     @Getter
-    protected List<TableColumnInfo> tableColumnInfos;
-    protected Map<String, TableColumnInfo> displayNameMap;
+    protected List<ColumnDefinition> columnDefinitions;
+    protected Map<String, ColumnDefinition> displayNameMap;
     protected List<String> displayNameList;
-    protected Map<String, TableColumnInfo> fieldNameMap;
+    protected Map<String, ColumnDefinition> fieldNameMap;
     protected List<String> fieldNameList;
 
-    public TableColumnInfoModel(JBTable table) {
+    public ColumnDefinitionTableModel(JBTable table) {
         this.table = table;
     }
 
-    public void setTableColumnInfos(List<TableColumnInfo> tableColumnInfos) {
-        this.tableColumnInfos = tableColumnInfos;
+    public void setColumnDefinition(List<ColumnDefinition> tableColumnInfos) {
+        this.columnDefinitions = tableColumnInfos;
         this.displayNameMap = tableColumnInfos.stream()
-                .collect(Collectors.toMap(TableColumnInfo::getDisplayName, Function.identity()));
+                .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
         this.displayNameList = tableColumnInfos.stream()
-                .map(TableColumnInfo::getDisplayName).collect(Collectors.toList());
+                .map(ColumnDefinition::getDisplayName).collect(Collectors.toList());
         this.fieldNameMap = tableColumnInfos.stream()
-                .collect(Collectors.toMap(TableColumnInfo::getFieldName, Function.identity()));
+                .collect(Collectors.toMap(ColumnDefinition::getFieldName, Function.identity()));
         this.fieldNameList = tableColumnInfos.stream()
-                .map(TableColumnInfo::getFieldName).collect(Collectors.toList());
+                .map(ColumnDefinition::getFieldName).collect(Collectors.toList());
 
         setColumnIdentifiers(displayNameList.toArray());
     }
@@ -59,12 +59,12 @@ public class TableColumnInfoModel extends DefaultTableModel {
         return super.getColumnName(modelColumnIndex);
     }
 
-    public TableColumnInfo getTableColumnInfo(int modelColumnIndex) {
-        return tableColumnInfos.get(modelColumnIndex);
+    public ColumnDefinition getColumnDefinition(int modelColumnIndex) {
+        return columnDefinitions.get(modelColumnIndex);
     }
 
-    public TableColumnInfo getTableColumnInfo(String fieldName) {
-        return tableColumnInfos.get(getColumnIndex(fieldName));
+    public ColumnDefinition getColumnDefinition(String fieldName) {
+        return columnDefinitions.get(getColumnIndex(fieldName));
     }
 
     /**
@@ -103,8 +103,8 @@ public class TableColumnInfoModel extends DefaultTableModel {
         };
 
         // 有些字符串字段 要转成 数字进行排序
-        for (int i = 0; i < tableColumnInfos.size(); i++) {
-            TableColumnInfo tableFieldInfo = tableColumnInfos.get(i);
+        for (int i = 0; i < columnDefinitions.size(); i++) {
+            ColumnDefinition tableFieldInfo = columnDefinitions.get(i);
             if (tableFieldInfo.isEnableNumberSorter()) {
                 sorter.setComparator(i, doubleComparator);
             }
@@ -116,7 +116,7 @@ public class TableColumnInfoModel extends DefaultTableModel {
 
     @Override
     public boolean isCellEditable(int row, int column) {
-        TableColumnInfo fieldInfo = tableColumnInfos.get(column);
+        ColumnDefinition fieldInfo = columnDefinitions.get(column);
         return fieldInfo.isEditable();
     }
 }

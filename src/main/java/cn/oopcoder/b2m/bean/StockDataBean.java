@@ -44,59 +44,57 @@ public class StockDataBean {
     // @TableColumn(name = "行号", order = 4)
     private int index;
 
-    @TableColumn(name = "名称", order = 6, showMode = {Normal})
+    @Column(name = "名称", order = 6, showMode = {Normal})
     private String name;
 
-    @TableColumn(name = "编码", order = 8)
+    @Column(name = "编码", order = 8)
     private String code;
 
     // 隐蔽模式名，最好是英文
-    @TableColumn(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask", editable = true)
+    @Column(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask", editable = true)
     private String maskName;
 
-    @TableColumn(name = "别名", order = 15, showMode = {Normal}, editable = true)
+    @Column(name = "别名", order = 15, showMode = {Normal}, editable = true)
     private String alias;
 
-    @TableColumn(name = "当前价", order = 20, hiddenModeName = "now", enableNumberComparator = true)
+    @Column(name = "当前价", order = 20, hiddenModeName = "now", enableNumberComparator = true)
     private String currentPrice;
 
-    @TableColumn(name = "涨跌", order = 25, hiddenModeName = "up", enableNumberComparator = true,
+    @Column(name = "涨跌", order = 25, hiddenModeName = "up", enableNumberComparator = true,
             foreground = {lightRed, softGreen}, hiddenModeForeground = {lightRed, softGreen})
     private String change;
 
-    @TableColumn(name = "涨跌幅", order = 30, hiddenModeName = "upp", enableNumberComparator = true,
+    @Column(name = "涨跌幅", order = 30, hiddenModeName = "upp", enableNumberComparator = true,
             foreground = {lightRed, softGreen}, hiddenModeForeground = {lightRed, softGreen})
     private String changePercent;
 
-    @TableColumn(name = "最高价", order = 35, enableNumberComparator = true)
+    @Column(name = "最高价", order = 35, enableNumberComparator = true)
     private String high;
 
-    @TableColumn(name = "最低价", order = 40, enableNumberComparator = true)
+    @Column(name = "最低价", order = 40, enableNumberComparator = true)
     private String low;
 
-    @TableColumn(name = "时间", order = 60, showMode = {Normal})
+    @Column(name = "时间", order = 60, showMode = {Normal})
     private String time;
 
     // 固定在顶部
     // @TableColumn(name = "固定", order = 45)
     private boolean pinTop = false;
 
-    public static List<TableColumnInfo> hiddenTableColumnInfos = getTableColumnInfos(Hidden);
-    public static List<TableColumnInfo> normalTableColumnInfos = getTableColumnInfos(Normal);
 
-    public static List<TableColumnInfo> getTableColumnInfos(ShowMode showMode) {
+    public static List<ColumnDefinition> getTableColumnInfos(ShowMode showMode) {
         boolean isHidden = Hidden == showMode;
 
         return Arrays.stream(StockDataBean.class.getDeclaredFields())
                 .filter(field -> {
-                    if (!field.isAnnotationPresent(TableColumn.class)) {
+                    if (!field.isAnnotationPresent(Column.class)) {
                         return false;
                     }
-                    ShowMode[] showModes = field.getAnnotation(TableColumn.class).showMode();
+                    ShowMode[] showModes = field.getAnnotation(Column.class).showMode();
                     return Arrays.stream(showModes).anyMatch(sm -> sm == showMode);
                 })
                 .map(field -> {
-                    TableColumn tc = field.getAnnotation(TableColumn.class);
+                    Column tc = field.getAnnotation(Column.class);
                     String displayName = isHidden ? tc.hiddenModeName() : tc.name();
                     if (StringUtils.isEmpty(displayName)) {
                         displayName = field.getName();
@@ -113,13 +111,12 @@ public class StockDataBean {
                             }
                         }
                     }
-                    return new TableColumnInfo(field.getName(), displayName, displayColor, tc.order(),
-                            tc.enableNumberComparator(), tc.editable());
+                    return new ColumnDefinition(field.getName(), displayName, displayColor, tc.order(),
+                            tc.enableNumberComparator(), tc.editable(), isHidden ? 60 : 100);
                 })
-                .sorted(Comparator.comparingInt(TableColumnInfo::getOrder))
+                .sorted(Comparator.comparingInt(ColumnDefinition::getOrder))
                 .collect(Collectors.toList());
     }
-
 
     public StockDataBean(StockConfig stockConfig, int index) {
         this.code = stockConfig.getCode();

@@ -1,8 +1,7 @@
 package cn.oopcoder.b2m.window.tool;
 
-import cn.oopcoder.b2m.bean.TableColumnInfo;
+import cn.oopcoder.b2m.bean.ColumnDefinition;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
-import cn.oopcoder.b2m.config.TableColumnConfig;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.table.model.StockTableModel;
@@ -248,17 +247,7 @@ public class StockWindow {
                 e.getPresentation().setText(selected ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN);
 
                 // 持久化列宽 todo 监听项目退出时持久化
-                List<TableColumnInfo> tableColumnInfos = tableModel.getTableColumnInfos();
-                List<TableColumnConfig> stockTableColumnConfig = GlobalConfigManager.getInstance().getStockTableColumnConfig();
-                Map<String, TableColumnConfig> tableColumnConfigMap = stockTableColumnConfig.stream()
-                        .collect(Collectors.toMap(TableColumnConfig::getFieldName, Function.identity()));
-
-                for (TableColumnInfo tableColumnInfo : tableColumnInfos) {
-                    TableColumn tableColumn = table.getColumn(tableColumnInfo.getDisplayName());
-                    TableColumnConfig columnConfig = tableColumnConfigMap.get(tableColumnInfo.getFieldName());
-                    columnConfig.setPreferredWidth(tableColumn.getPreferredWidth());
-                }
-                GlobalConfigManager.getInstance().persistStockTableColumnConfig(stockTableColumnConfig);
+                GlobalConfigManager.getInstance().persistSystemTableColumn(tableModel.getSystemTableColumns());
 
                 beautifyTable();
                 GlobalConfigManager.getInstance().setShowMode(selected ? ShowMode.Hidden : ShowMode.Normal);
@@ -319,11 +308,7 @@ public class StockWindow {
                 System.out.println("columnMoved(): " + e.getFromIndex() + " -> " + e.getToIndex());
 
                 // 移动列，只会更改 TableColumn 的顺序，不会修改我们通过 setColumnIdentifiers 设置的表头
-
-                List<String> displayNames = tableModel.getSystemTableColumns().stream()
-                        .map(tableColumn -> (String) tableColumn.getHeaderValue())
-                        .collect(Collectors.toList());
-                GlobalConfigManager.getInstance().reOrderTableColumn(displayNames);
+                GlobalConfigManager.getInstance().persistSystemTableColumn(tableModel.getSystemTableColumns());
             }
         });
 
@@ -392,19 +377,17 @@ public class StockWindow {
 
     private void createModel() {
 
-        List<TableColumnInfo> tableColumnInfoOrder = GlobalConfigManager.getInstance().getStockTableColumnInfoOrder();
-
         tableModel = new StockTableModel(table);
         table.setModel(tableModel);
 
         // 设置表头
-        tableModel.setTableColumnInfos(tableColumnInfoOrder);
+        tableModel.setColumnDefinition(GlobalConfigManager.getInstance().getStockColumnDefinition());
 
         // 配置排序器
         tableModel.configRowSorter();
 
         // 配置要监控的股票
-        tableModel.configStockDataBean(GlobalConfigManager.getInstance().getStockConfig());
+        tableModel.configStockDataBean(GlobalConfigManager.getInstance().getStockDataBean());
 
         tableModel.addTableModelListener(new TableModelListener() {
             @Override
@@ -413,7 +396,7 @@ public class StockWindow {
                     return;
                 }
                 StockTableModel tableModel = (StockTableModel) e.getSource();
-                TableColumnInfo fieldInfo = tableModel.getTableColumnInfo(e.getColumn());
+                ColumnDefinition fieldInfo = tableModel.getColumnDefinition(e.getColumn());
                 if (fieldInfo == null) {
                     return;
                 }
@@ -437,13 +420,13 @@ public class StockWindow {
         });
 
         // 配置渲染器
-        configRenderer(tableColumnInfoOrder);
+        configRenderer();
 
         // 第一次刷新一下
         refreshModel();
     }
 
-    public void configRenderer(List<TableColumnInfo> tableColumnInfos) {
+    public void configRenderer() {
 
         // todo 会导致默认的排序箭头不见了，暂时移除
 
@@ -462,17 +445,16 @@ public class StockWindow {
 
         // boolean selected = showModeCheckBox.isSelected();
 
+        List<ColumnDefinition> columnDefinitions = tableModel.getColumnDefinitions();
+        Map<String, ColumnDefinition> tableColumnInfoMap = columnDefinitions.stream()
+                .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
 
-        List<TableColumnConfig> stockTableColumnConfig = GlobalConfigManager.getInstance().getStockTableColumnConfig();
-        Map<String, TableColumnConfig> tableColumnConfigMap = stockTableColumnConfig.stream()
-                .collect(Collectors.toMap(TableColumnConfig::getFieldName, Function.identity()));
+        List<TableColumn> systemTableColumns = tableModel.getSystemTableColumns();
+        for (TableColumn tableColumn : systemTableColumns) {
+            String displayName = (String) tableColumn.getHeaderValue();
+            ColumnDefinition columnDefinition = tableColumnInfoMap.get(displayName);
 
-        for (TableColumnInfo tableColumnInfo : tableColumnInfos) {
-
-            TableColumn tableColumn = table.getColumn(tableColumnInfo.getDisplayName());
-            TableColumnConfig columnConfig = tableColumnConfigMap.get(tableColumnInfo.getFieldName());
-
-            Integer preferredWidth = columnConfig.getPreferredWidth();
+            Integer preferredWidth = columnDefinition.getPreferredWidth();
             if (preferredWidth != null) {
                 // 设置默认的列宽，源码不建议使用setWidth()方法
                 tableColumn.setPreferredWidth(preferredWidth);
@@ -487,7 +469,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -497,9 +479,9 @@ public class StockWindow {
                     Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, viewRowIndex, viewColumnIndex);
                     // System.out.println(" 背景中： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
-                    if (!tableColumnInfo.getDisplayColor().isEmpty()) {
+                    if (!columnDefinition.getDisplayColor().isEmpty()) {
                         // 设置文本颜色
-                        handleForeground(component, table, value, tableColumnInfo.getDisplayColor());
+                        handleForeground(component, table, value, columnDefinition.getDisplayColor());
                     }
 
                     // 设置行背景色
@@ -547,7 +529,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-                                  int viewRowIndex, int viewColumnIndex) {
+            int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");

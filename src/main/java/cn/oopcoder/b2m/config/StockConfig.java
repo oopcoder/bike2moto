@@ -14,19 +14,19 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class StockConfig {
 
+    private String code;
+
     private String maskName;
 
     private String alias;
 
-    private String code;
-
     // 固定在顶部
     private boolean pinTop = false;
 
-
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         StockConfig that = (StockConfig) o;
         return Objects.equals(code, that.code);
     }

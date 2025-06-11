@@ -13,13 +13,16 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.swing.table.TableColumn;
+
 import cn.oopcoder.b2m.bean.StockDataBean;
-import cn.oopcoder.b2m.bean.TableColumnInfo;
+import cn.oopcoder.b2m.bean.ColumnDefinition;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.FileUtil;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 
 import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
+import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 
 /**
  * Created by oopcoder at 2025/5/31 9:42 .
@@ -27,10 +30,12 @@ import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
 
 public class GlobalConfigManager {
 
-
     private static final GlobalConfigManager ourInstance = new GlobalConfigManager();
 
     private static final String GLOBAL_CONFIG_KEY = "b2m.global.config";
+
+    public static List<ColumnDefinition> hiddenTableColumnInfos;
+    public static List<ColumnDefinition> normalTableColumnInfos;
 
     public static GlobalConfigManager getInstance() {
         return ourInstance;
@@ -87,10 +92,41 @@ public class GlobalConfigManager {
         propertiesComponent.setValue(GLOBAL_CONFIG_KEY, "");
         System.out.println("配置清除成功：【" + json + " 】");
         config = null;
-
+        hiddenTableColumnInfos = null;
+        normalTableColumnInfos = null;
     }
 
-    public void persistStockConfig(List<StockConfig> stockConfig) {
+    // 排序间隔，必须要大于 MOVE_FACTOR，
+    // 不然在置顶、置底、上移、下移逻辑时会出现 index 相等的情况，从而导致一些奇怪的问题，
+    // 比如想要上移1行，却上移了3行，因为 index 一样的时候，根据 code 排序，所以出现了移动多行的现象
+    public static final int ORDER_FACTOR = 10;
+    public static final int MOVE_FACTOR = 1;
+
+    public List<StockDataBean> getStockDataBean() {
+        List<StockConfig> stockConfigs = getStockConfig();
+        int index = 1;
+        List<StockDataBean> stockDataBeanList = new ArrayList<>();
+        for (StockConfig stockConfig : stockConfigs) {
+            stockDataBeanList.add(new StockDataBean(stockConfig, ORDER_FACTOR * index++));
+        }
+        return stockDataBeanList;
+    }
+
+    public void persistStockDataBean(List<StockDataBean> stockDataBeans) {
+        int index = 1;
+        for (StockDataBean stockDataBean : stockDataBeans) {
+            stockDataBean.setIndex(ORDER_FACTOR * index++);
+        }
+
+        // 按顺序 持久化
+        List<StockConfig> list = stockDataBeans.stream()
+                .map(t -> new StockConfig(t.getCode(), t.getMaskName(), t.getAlias(), t.isPinTop()))
+                .collect(Collectors.toList());
+
+        persistStockConfig(list);
+    }
+
+    private void persistStockConfig(List<StockConfig> stockConfig) {
         if (config == null) {
             config = new GlobalConfig();
         }
@@ -98,7 +134,7 @@ public class GlobalConfigManager {
         persist();
     }
 
-    public List<StockConfig> getStockConfig() {
+    private List<StockConfig> getStockConfig() {
         if (config == null || config.getStockConfig() == null || config.getStockConfig().isEmpty()) {
             String json = FileUtil.readString("config/DefaultStockConfig.json");
             List<StockConfig> stockDataBeanList = JacksonUtil.fromJson(json, new TypeReference<>() {
@@ -113,77 +149,91 @@ public class GlobalConfigManager {
         return config.getStockConfig();
     }
 
-    public void persistStockTableColumnConfig(List<TableColumnConfig> tableColumnConfigs) {
+    private void persistStockColumnConfig(List<ColumnConfig> tableColumnConfigs) {
         if (config == null) {
             config = new GlobalConfig();
         }
-        config.setStockTableColumnConfig(isHiddenMode(), tableColumnConfigs);
+        config.setStockColumnConfig(isHiddenMode(), tableColumnConfigs);
         persist();
     }
 
-    public List<TableColumnConfig> getStockTableColumnConfig() {
+    private List<ColumnConfig> getStockColumnConfig() {
 
-        if (config == null || config.getStockTableColumnConfig(isHiddenMode()) == null) {
+        if (config == null || config.getStockColumnConfig(isHiddenMode()) == null) {
             // 第一次加载
-            List<TableColumnInfo> defaultTableColumnInfo = getDefaultTableColumnInfo();
-            List<TableColumnConfig> tableColumnConfigs = new ArrayList<>();
-            for (TableColumnInfo tableColumnInfo : defaultTableColumnInfo) {
-                TableColumnConfig columnConfig = new TableColumnConfig();
-                columnConfig.setFieldName(tableColumnInfo.getFieldName());
-                columnConfig.setPreferredWidth(isHiddenMode() ? 60 : 100);
+            List<ColumnDefinition> defaultTableColumnInfo = getDefaultTableColumnInfo();
+            List<ColumnConfig> tableColumnConfigs = new ArrayList<>();
+            for (ColumnDefinition definition : defaultTableColumnInfo) {
+                ColumnConfig columnConfig = new ColumnConfig();
+                columnConfig.setFieldName(definition.getFieldName());
+                columnConfig.setPreferredWidth(definition.getPreferredWidth());
                 tableColumnConfigs.add(columnConfig);
             }
-            persistStockTableColumnConfig(tableColumnConfigs);
+            persistStockColumnConfig(tableColumnConfigs);
             return tableColumnConfigs;
         }
 
-        return config.getStockTableColumnConfig(isHiddenMode());
+        return config.getStockColumnConfig(isHiddenMode());
     }
 
-    private List<TableColumnInfo> getDefaultTableColumnInfo() {
-        return isHiddenMode() ? StockDataBean.hiddenTableColumnInfos : StockDataBean.normalTableColumnInfos;
+    private List<ColumnDefinition> getDefaultTableColumnInfo() {
+        if (isHiddenMode()) {
+            if (hiddenTableColumnInfos == null) {
+                hiddenTableColumnInfos = StockDataBean.getTableColumnInfos(Hidden);
+            }
+            return hiddenTableColumnInfos;
+        }
+        if (normalTableColumnInfos == null) {
+            normalTableColumnInfos = StockDataBean.getTableColumnInfos(Normal);
+        }
+        return normalTableColumnInfos;
     }
-
 
     /**
-     * @param displayNames 隐藏模式 是隐藏名，正常模式 是正常中文名
+     * 隐藏模式 是隐藏名，正常模式 是正常中文名
      */
-    public void reOrderTableColumn(List<String> displayNames) {
+    public void persistSystemTableColumn(List<TableColumn> systemTableColumns) {
 
-        List<TableColumnInfo> defaultTableColumnInfo = getDefaultTableColumnInfo();
-        Map<String, TableColumnInfo> tableColumnInfoMap = defaultTableColumnInfo.stream()
-                .collect(Collectors.toMap(TableColumnInfo::getDisplayName, Function.identity()));
+        List<ColumnDefinition> defaultTableColumnInfo = getDefaultTableColumnInfo();
+        Map<String, ColumnDefinition> tableColumnInfoMap = defaultTableColumnInfo.stream()
+                .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
 
-        List<TableColumnConfig> stockTableColumnConfig = getStockTableColumnConfig();
-        Map<String, TableColumnConfig> tableColumnConfigMap = stockTableColumnConfig.stream()
-                .collect(Collectors.toMap(TableColumnConfig::getFieldName, Function.identity()));
+        List<ColumnConfig> stockTableColumnConfig = getStockColumnConfig();
+        Map<String, ColumnConfig> tableColumnConfigMap = stockTableColumnConfig.stream()
+                .collect(Collectors.toMap(ColumnConfig::getFieldName, Function.identity()));
 
-        List<TableColumnConfig> orderList = new ArrayList<>();
+        List<ColumnConfig> orderList = new ArrayList<>();
         // 重新排序
-        for (String displayName : displayNames) {
-            TableColumnInfo tableColumnInfo = tableColumnInfoMap.get(displayName);
-            TableColumnConfig columnConfig = tableColumnConfigMap.get(tableColumnInfo.getFieldName());
+        for (TableColumn tableColumn : systemTableColumns) {
+            String displayName = (String) tableColumn.getHeaderValue();
+            ColumnDefinition columnDefinition = tableColumnInfoMap.get(displayName);
+
+            ColumnConfig columnConfig = tableColumnConfigMap.get(columnDefinition.getFieldName());
+            columnConfig.setPreferredWidth(tableColumn.getPreferredWidth());
+
             orderList.add(columnConfig);
         }
-        persistStockTableColumnConfig(orderList);
+        persistStockColumnConfig(orderList);
     }
-
 
     /**
      * 按配置文件排序，因为列的顺序可以变更过
      */
-    public List<TableColumnInfo> getStockTableColumnInfoOrder() {
+    public List<ColumnDefinition> getStockColumnDefinition() {
 
-        Map<String, TableColumnInfo> tableColumnInfoMap = getDefaultTableColumnInfo().stream()
-                .collect(Collectors.toMap(TableColumnInfo::getFieldName, Function.identity()));
+        Map<String, ColumnDefinition> tableColumnInfoMap = getDefaultTableColumnInfo().stream()
+                .collect(Collectors.toMap(ColumnDefinition::getFieldName, Function.identity()));
 
-        List<TableColumnInfo> orderList = new ArrayList<>();
+        List<ColumnDefinition> orderList = new ArrayList<>();
 
-        // 按配置文件排序，因为列的顺序可以变更过
-        List<TableColumnConfig> stockTableColumnConfig = getStockTableColumnConfig();
-        for (TableColumnConfig tableColumnConfig : stockTableColumnConfig) {
-            TableColumnInfo tableColumnInfo = tableColumnInfoMap.get(tableColumnConfig.getFieldName());
-            orderList.add(tableColumnInfo);
+        // 按配置文件排序，因为列的顺序可能变更过
+        int index = 1;
+        List<ColumnConfig> columnConfigs = getStockColumnConfig();
+        for (ColumnConfig columnConfig : columnConfigs) {
+            ColumnDefinition columnDefinition = tableColumnInfoMap.get(columnConfig.getFieldName());
+            columnDefinition.setPreferredWidth(columnConfig.getPreferredWidth());
+            columnDefinition.setOrder(index++);
+            orderList.add(columnDefinition);
         }
         return orderList;
     }

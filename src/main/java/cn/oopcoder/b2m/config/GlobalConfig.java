@@ -1,6 +1,5 @@
 package cn.oopcoder.b2m.config;
 
-import cn.oopcoder.b2m.enums.ShowMode;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.AllArgsConstructor;
@@ -9,30 +8,27 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GlobalConfig {
 
-    List<TableColumnConfig> normalStockTableColumnConfig;
+    List<ColumnConfig> normalStockColumnConfig;
 
-    List<TableColumnConfig> hiddenStockTableColumnConfig;
+    List<ColumnConfig> hiddenStockColumnConfig;
 
     List<StockConfig> stockConfig;
 
-
-    public List<TableColumnConfig> getStockTableColumnConfig(boolean isHidden) {
-        return isHidden ? hiddenStockTableColumnConfig : normalStockTableColumnConfig;
+    public List<ColumnConfig> getStockColumnConfig(boolean isHidden) {
+        return isHidden ? hiddenStockColumnConfig : normalStockColumnConfig;
     }
 
-    public void setStockTableColumnConfig(boolean isHidden, List<TableColumnConfig> tableColumnConfig) {
+    public void setStockColumnConfig(boolean isHidden, List<ColumnConfig> tableColumnConfig) {
         if (isHidden) {
-            hiddenStockTableColumnConfig = tableColumnConfig;
+            hiddenStockColumnConfig = tableColumnConfig;
             return;
         }
-        normalStockTableColumnConfig = tableColumnConfig;
+        normalStockColumnConfig = tableColumnConfig;
     }
 }

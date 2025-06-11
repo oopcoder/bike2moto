@@ -1,12 +1,9 @@
 package cn.oopcoder.b2m.table.model;
 
-import cn.oopcoder.b2m.config.StockConfig;
-
 import cn.oopcoder.b2m.utils.StockDataUtil;
 
 import com.intellij.ui.table.JBTable;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +15,7 @@ import java.util.stream.Collectors;
 import javax.swing.table.TableColumn;
 
 import cn.oopcoder.b2m.bean.StockDataBean;
-import cn.oopcoder.b2m.bean.TableColumnInfo;
+import cn.oopcoder.b2m.bean.ColumnDefinition;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 
 import org.jetbrains.annotations.NotNull;
@@ -26,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
+import static cn.oopcoder.b2m.config.GlobalConfigManager.MOVE_FACTOR;
 import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
 
 /**
@@ -36,13 +34,7 @@ import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
  * fireTableDataChanged();
  */
 
-public class StockTableModel extends TableColumnInfoModel {
-
-    // 排序间隔，必须要大于 MOVE_FACTOR，
-    // 不然在置顶、置底、上移、下移逻辑时会出现 index 相等的情况，从而导致一些奇怪的问题，
-    // 比如想要上移1行，却上移了3行，因为 index 一样的时候，根据 code 排序，所以出现了移动多行的现象
-    public static final int ORDER_FACTOR = 10;
-    public static final int MOVE_FACTOR = 1;
+public class StockTableModel extends ColumnDefinitionTableModel {
 
     private Map<String, StockDataBean> stockDataBeanMap;
 
@@ -50,14 +42,7 @@ public class StockTableModel extends TableColumnInfoModel {
         super(table);
     }
 
-    public void configStockDataBean(List<StockConfig> stockConfigs) {
-
-        int index = 1;
-        List<StockDataBean> stockDataBeanList = new ArrayList<>();
-        for (StockConfig stockConfig : stockConfigs) {
-            stockDataBeanList.add(new StockDataBean(stockConfig, ORDER_FACTOR * index++));
-        }
-
+    public void configStockDataBean(List<StockDataBean> stockDataBeanList) {
         this.stockDataBeanMap = stockDataBeanList.stream().
                 collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
     }
@@ -76,7 +61,7 @@ public class StockTableModel extends TableColumnInfoModel {
         // 这里列的顺序可能变更过，恢复表头排序来取值
         columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
 
-        List<TableColumnInfo> fieldInfoList = columnList.stream()
+        List<ColumnDefinition> fieldInfoList = columnList.stream()
                 .map(tableColumn -> displayNameMap.get((String) tableColumn.getHeaderValue()))
                 .collect(Collectors.toList());
 
@@ -85,7 +70,7 @@ public class StockTableModel extends TableColumnInfoModel {
         stockDataBeans.forEach(stockDataBean -> {
             Vector<Object> vector = new Vector<>(fieldInfoList.size());
 
-            for (TableColumnInfo fieldInfo : fieldInfoList) {
+            for (ColumnDefinition fieldInfo : fieldInfoList) {
                 String fieldName = fieldInfo.getFieldName();
                 Object fieldValue = stockDataBean.getFieldValue(fieldName);
                 // 涨幅
@@ -111,10 +96,10 @@ public class StockTableModel extends TableColumnInfoModel {
 
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
 
-        String fieldName = getTableColumnInfo(modelColumnIndex).getFieldName();
+        String fieldName = getColumnDefinition(modelColumnIndex).getFieldName();
         stockDataBean.setFieldValue(fieldName, aValue);
 
-        persistStockConfig(false);
+        persistStockDataBean(false);
     }
 
     /**
@@ -148,7 +133,7 @@ public class StockTableModel extends TableColumnInfoModel {
         stockDataBean.setCode(code);
         stockDataBean.setIndex(Integer.MAX_VALUE);
         stockDataBeanMap.put(code, stockDataBean);
-        persistStockConfig(true);
+        persistStockDataBean(true);
 
         return getModelRowIndex(stockDataBean.getCode());
 
@@ -167,7 +152,7 @@ public class StockTableModel extends TableColumnInfoModel {
 
     private void removeStock(String code) {
         stockDataBeanMap.remove(code);
-        persistStockConfig(false);
+        persistStockDataBean(false);
     }
 
     /**
@@ -199,7 +184,7 @@ public class StockTableModel extends TableColumnInfoModel {
         if (optional.isPresent()) {
             StockDataBean top = optional.get();
             stockDataBean.setIndex(top.getIndex() - MOVE_FACTOR);
-            persistStockConfig(false);
+            persistStockDataBean(false);
             return getModelRowIndex(stockDataBean.getCode());
         }
         return -1;
@@ -222,7 +207,7 @@ public class StockTableModel extends TableColumnInfoModel {
         if (optional.isPresent()) {
             StockDataBean bottom = optional.get();
             stockDataBean.setIndex(bottom.getIndex() + MOVE_FACTOR);
-            persistStockConfig(false);
+            persistStockDataBean(false);
             return getModelRowIndex(stockDataBean.getCode());
         }
         return -1;
@@ -246,7 +231,7 @@ public class StockTableModel extends TableColumnInfoModel {
         if (index > 0) {
             StockDataBean preStockDataBean = list.get(index - 1);
             stockDataBean.setIndex(preStockDataBean.getIndex() - MOVE_FACTOR);
-            persistStockConfig(false);
+            persistStockDataBean(false);
             return modelRowIndex - 1;
         }
         return modelRowIndex;
@@ -270,7 +255,7 @@ public class StockTableModel extends TableColumnInfoModel {
         if (index < list.size() - 1) {
             StockDataBean nextStockDataBean = list.get(index + 1);
             stockDataBean.setIndex(nextStockDataBean.getIndex() + MOVE_FACTOR);
-            persistStockConfig(false);
+            persistStockDataBean(false);
             return modelRowIndex + 1;
         }
         return modelRowIndex;
@@ -303,7 +288,7 @@ public class StockTableModel extends TableColumnInfoModel {
                     .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
         }
         stockDataBean.setPinTop(!pinTop);
-        persistStockConfig(false);
+        persistStockDataBean(false);
 
         return getModelRowIndex(stockDataBean.getCode());
     }
@@ -326,20 +311,9 @@ public class StockTableModel extends TableColumnInfoModel {
         return stockDataBeanMap.get(stockCode);
     }
 
-    private void persistStockConfig(boolean loadData) {
+    private void persistStockDataBean(boolean loadData) {
         List<StockDataBean> stockDataBeans = getDefaultOrderStockDataBeanList();
-
-        int index = 1;
-        for (StockDataBean stockDataBean : stockDataBeans) {
-            stockDataBean.setIndex(ORDER_FACTOR * index++);
-        }
-
-        // 按顺序 持久化
-        List<StockConfig> list = stockDataBeans.stream()
-                .map(t -> new StockConfig(t.getMaskName(), t.getAlias(), t.getCode(), t.isPinTop()))
-                .collect(Collectors.toList());
-        GlobalConfigManager.getInstance().persistStockConfig(list);
-
+        GlobalConfigManager.getInstance().persistStockDataBean(stockDataBeans);
         // 修改过数据，刷新一下
         refresh(loadData);
 
