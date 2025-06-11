@@ -1,7 +1,7 @@
 [
   {
     "code": "sz300059",
-    "maskName": "dc",
+    "maskName": "dongcai",
     "alias": "富",
     "pinTop": true
   },
@@ -13,30 +13,37 @@
   },
   {
     "code": "sz002195",
-    "alias": "岩"
+    "alias": "岩",
+    "maskName": "yskj"
   },
   {
     "code": "sh601360",
-    "alias": "360"
+    "alias": "360",
+    "maskName": "360"
   },
   {
     "code": "sh600031",
-    "alias": "31"
+    "alias": "31",
+    "maskName": "31"
   },
   {
     "code": "sh600900",
-    "alias": "电"
+    "alias": "电",
+    "maskName": "dianli"
   },
   {
     "code": "sh601211",
-    "alias": "泰"
+    "alias": "泰",
+    "maskName": "gt"
   },
   {
     "code": "sh601138",
-    "alias": "联"
+    "alias": "联",
+    "maskName": "fulian"
   },
   {
     "code": "sh562500",
-    "alias": "器"
+    "alias": "器",
+    "maskName": "jqr"
   }
 ]

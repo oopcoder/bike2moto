@@ -78,7 +78,7 @@ public class StockTableModel extends TableColumnInfoModel {
 
         List<TableColumnInfo> fieldInfoList = columnList.stream()
                 .map(tableColumn -> displayNameMap.get((String) tableColumn.getHeaderValue()))
-                .toList();
+                .collect(Collectors.toList());
 
         List<StockDataBean> stockDataBeans = getDefaultOrderStockDataBeanList();
 

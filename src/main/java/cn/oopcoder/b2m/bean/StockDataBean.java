@@ -88,18 +88,18 @@ public class StockDataBean {
         boolean isHidden = Hidden == showMode;
 
         return Arrays.stream(StockDataBean.class.getDeclaredFields())
-                .filter(f -> {
-                    if (!f.isAnnotationPresent(TableColumn.class)) {
+                .filter(field -> {
+                    if (!field.isAnnotationPresent(TableColumn.class)) {
                         return false;
                     }
-                    ShowMode[] showModes = f.getAnnotation(TableColumn.class).showMode();
+                    ShowMode[] showModes = field.getAnnotation(TableColumn.class).showMode();
                     return Arrays.stream(showModes).anyMatch(sm -> sm == showMode);
                 })
-                .map(f -> {
-                    TableColumn tc = f.getAnnotation(TableColumn.class);
+                .map(field -> {
+                    TableColumn tc = field.getAnnotation(TableColumn.class);
                     String displayName = isHidden ? tc.hiddenModeName() : tc.name();
                     if (StringUtils.isEmpty(displayName)) {
-                        displayName = f.getName();
+                        displayName = field.getName();
                     }
 
                     String[] foreground = isHidden ? tc.hiddenModeForeground() : tc.foreground();
@@ -113,16 +113,13 @@ public class StockDataBean {
                             }
                         }
                     }
-                    return new TableColumnInfo(f.getName(), displayName, displayColor, tc.order(),
+                    return new TableColumnInfo(field.getName(), displayName, displayColor, tc.order(),
                             tc.enableNumberComparator(), tc.editable());
                 })
                 .sorted(Comparator.comparingInt(TableColumnInfo::getOrder))
                 .collect(Collectors.toList());
     }
 
-    // public StockDataBean(String code) {
-    //     this.code = code;
-    // }
 
     public StockDataBean(StockConfig stockConfig, int index) {
         this.code = stockConfig.getCode();

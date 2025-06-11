@@ -104,13 +104,15 @@ public class GlobalConfigManager {
                 .collect(Collectors.toMap(TableColumnInfo::getDisplayName, Function.identity()));
 
         // 要转成 真正的字段名
-        List<String> fieldNameList = new ArrayList<>();
+        List<TableColumnConfig> fieldNameList = new ArrayList<>();
 
         for (String displayName : displayNames) {
             TableColumnInfo fieldInfo = fieldInfoMap.get(displayName);
-            fieldNameList.add(fieldInfo.getFieldName());
+            TableColumnConfig columnConfig = new TableColumnConfig();
+            columnConfig.setFieldName(fieldInfo.getFieldName());
+            fieldNameList.add(columnConfig);
         }
-        config.setStockTableColumn(fieldNameList);
+        config.setStockTableColumnConfig(fieldNameList);
         persist();
     }
 
@@ -147,7 +149,7 @@ public class GlobalConfigManager {
     public List<TableColumnInfo> getStockTableColumnInfoOrder() {
         List<TableColumnInfo> fieldInfoList = getDefaultTableColumnInfo();
 
-        if (config == null || config.getStockTableColumn() == null || config.getStockTableColumn().isEmpty()) {
+        if (config == null || config.getStockTableColumnConfig() == null || config.getStockTableColumnConfig().isEmpty()) {
             return fieldInfoList;
         }
 
@@ -156,11 +158,11 @@ public class GlobalConfigManager {
 
         // 按配置文件排序，因为列的顺序可以变更过
         List<TableColumnInfo> result = new ArrayList<>();
-        for (String fieldName : config.getStockTableColumn()) {
-            TableColumnInfo fieldInfo = map.get(fieldName);
+        for (TableColumnConfig fieldName : config.getStockTableColumnConfig()) {
+            TableColumnInfo fieldInfo = map.get(fieldName.getFieldName());
             if (fieldInfo != null) {
                 result.add(fieldInfo);
-                map.remove(fieldName);
+                map.remove(fieldName.getFieldName());
             }
         }
         result.addAll(map.values());
