@@ -21,6 +21,7 @@ import javax.swing.table.TableRowSorter;
 
 import cn.oopcoder.b2m.bean.TableColumnInfo;
 import cn.oopcoder.b2m.utils.NumUtil;
+import lombok.Getter;
 
 /**
  * Created by oopcoder at 2025/6/2 15:32 .
@@ -29,6 +30,7 @@ import cn.oopcoder.b2m.utils.NumUtil;
 public class TableColumnInfoModel extends DefaultTableModel {
 
     protected JBTable table;
+    @Getter
     protected List<TableColumnInfo> tableColumnInfos;
     protected Map<String, TableColumnInfo> displayNameMap;
     protected List<String> displayNameList;

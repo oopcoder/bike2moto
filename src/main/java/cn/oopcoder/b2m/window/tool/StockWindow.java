@@ -2,6 +2,7 @@ package cn.oopcoder.b2m.window.tool;
 
 import cn.oopcoder.b2m.bean.TableColumnInfo;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
+import cn.oopcoder.b2m.config.TableColumnConfig;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.table.model.StockTableModel;
@@ -41,7 +42,9 @@ import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.oopcoder.b2m.consts.Const.ADD;
@@ -244,6 +247,19 @@ public class StockWindow {
                 e.getPresentation().setIcon(selected ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED);
                 e.getPresentation().setText(selected ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN);
 
+                // 持久化列宽 todo 监听项目退出时持久化
+                List<TableColumnInfo> tableColumnInfos = tableModel.getTableColumnInfos();
+                List<TableColumnConfig> stockTableColumnConfig = GlobalConfigManager.getInstance().getStockTableColumnConfig();
+                Map<String, TableColumnConfig> tableColumnConfigMap = stockTableColumnConfig.stream()
+                        .collect(Collectors.toMap(TableColumnConfig::getFieldName, Function.identity()));
+
+                for (TableColumnInfo tableColumnInfo : tableColumnInfos) {
+                    TableColumn tableColumn = table.getColumn(tableColumnInfo.getDisplayName());
+                    TableColumnConfig columnConfig = tableColumnConfigMap.get(tableColumnInfo.getFieldName());
+                    columnConfig.setPreferredWidth(tableColumn.getPreferredWidth());
+                }
+                GlobalConfigManager.getInstance().persistStockTableColumnConfig(stockTableColumnConfig);
+
                 beautifyTable();
                 GlobalConfigManager.getInstance().setShowMode(selected ? ShowMode.Hidden : ShowMode.Normal);
                 createModel();
@@ -427,7 +443,7 @@ public class StockWindow {
         refreshModel();
     }
 
-    public void configRenderer(List<TableColumnInfo> tableFieldInfos) {
+    public void configRenderer(List<TableColumnInfo> tableColumnInfos) {
 
         // todo 会导致默认的排序箭头不见了，暂时移除
 
@@ -446,12 +462,21 @@ public class StockWindow {
 
         // boolean selected = showModeCheckBox.isSelected();
 
-        for (TableColumnInfo tableFieldInfo : tableFieldInfos) {
 
-            TableColumn tableColumn = table.getColumn(tableFieldInfo.getDisplayName());
+        List<TableColumnConfig> stockTableColumnConfig = GlobalConfigManager.getInstance().getStockTableColumnConfig();
+        Map<String, TableColumnConfig> tableColumnConfigMap = stockTableColumnConfig.stream()
+                .collect(Collectors.toMap(TableColumnConfig::getFieldName, Function.identity()));
 
-            // 设置默认的列宽，源码不建议使用setWidth()方法
-            tableColumn.setPreferredWidth(selected ? 60 : 100);
+        for (TableColumnInfo tableColumnInfo : tableColumnInfos) {
+
+            TableColumn tableColumn = table.getColumn(tableColumnInfo.getDisplayName());
+            TableColumnConfig columnConfig = tableColumnConfigMap.get(tableColumnInfo.getFieldName());
+
+            Integer preferredWidth = columnConfig.getPreferredWidth();
+            if (preferredWidth != null) {
+                // 设置默认的列宽，源码不建议使用setWidth()方法
+                tableColumn.setPreferredWidth(preferredWidth);
+            }
 
             // 定制
             tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
@@ -472,9 +497,9 @@ public class StockWindow {
                     Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, viewRowIndex, viewColumnIndex);
                     // System.out.println(" 背景中： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
-                    if (!tableFieldInfo.getDisplayColor().isEmpty()) {
+                    if (!tableColumnInfo.getDisplayColor().isEmpty()) {
                         // 设置文本颜色
-                        handleForeground(component, table, value, tableFieldInfo.getDisplayColor());
+                        handleForeground(component, table, value, tableColumnInfo.getDisplayColor());
                     }
 
                     // 设置行背景色
