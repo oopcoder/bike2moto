@@ -1,5 +1,5 @@
 import cn.oopcoder.b2m.bean.StockDataBean;
-import cn.oopcoder.b2m.bean.TableFieldInfo;
+import cn.oopcoder.b2m.bean.TableColumnInfo;
 import cn.oopcoder.b2m.enums.ShowMode;
 
 import org.junit.Test;
@@ -11,8 +11,8 @@ public class StockWindowTest {
 
     @Test
     public void getTableColumns() {
-        List<TableFieldInfo> list = StockDataBean.getTableColumns(ShowMode.Hidden);
-        for (TableFieldInfo info : list) {
+        List<TableColumnInfo> list = StockDataBean.getTableColumnInfos(ShowMode.Hidden);
+        for (TableColumnInfo info : list) {
             System.out.println(info);
         }
     }

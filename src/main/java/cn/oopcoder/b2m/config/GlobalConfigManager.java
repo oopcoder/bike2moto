@@ -8,15 +8,13 @@ import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import cn.oopcoder.b2m.bean.StockDataBean;
-import cn.oopcoder.b2m.bean.TableFieldInfo;
+import cn.oopcoder.b2m.bean.TableColumnInfo;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.FileUtil;
 import cn.oopcoder.b2m.utils.JacksonUtil;
@@ -100,17 +98,17 @@ public class GlobalConfigManager {
             config = new GlobalConfig();
         }
 
-        List<TableFieldInfo> fieldInfoList = getDefaultStockTableFieldInfo();
+        List<TableColumnInfo> fieldInfoList = getDefaultTableColumnInfo();
 
-        Map<String, TableFieldInfo> fieldInfoMap = fieldInfoList.stream()
-                .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
+        Map<String, TableColumnInfo> fieldInfoMap = fieldInfoList.stream()
+                .collect(Collectors.toMap(TableColumnInfo::getDisplayName, Function.identity()));
 
         // 要转成 真正的字段名
         List<String> fieldNameList = new ArrayList<>();
 
         for (String displayName : displayNames) {
-            TableFieldInfo fieldInfo = fieldInfoMap.get(displayName);
-            fieldNameList.add(fieldInfo.fieldName());
+            TableColumnInfo fieldInfo = fieldInfoMap.get(displayName);
+            fieldNameList.add(fieldInfo.getFieldName());
         }
         config.setStockTableColumn(fieldNameList);
         persist();
@@ -139,27 +137,27 @@ public class GlobalConfigManager {
         return config.getStockConfig();
     }
 
-    private List<TableFieldInfo> getDefaultStockTableFieldInfo() {
-        return isHiddenMode() ? StockDataBean.hiddenTableFields : StockDataBean.normalTableFields;
+    private List<TableColumnInfo> getDefaultTableColumnInfo() {
+        return isHiddenMode() ? StockDataBean.hiddenTableColumnInfos : StockDataBean.normalTableColumnInfos;
     }
 
     /**
      * 按配置文件排序，因为列的顺序可以变更过
      */
-    public List<TableFieldInfo> getStockTableFieldInfoOrder() {
-        List<TableFieldInfo> fieldInfoList = getDefaultStockTableFieldInfo();
+    public List<TableColumnInfo> getStockTableColumnInfoOrder() {
+        List<TableColumnInfo> fieldInfoList = getDefaultTableColumnInfo();
 
         if (config == null || config.getStockTableColumn() == null || config.getStockTableColumn().isEmpty()) {
             return fieldInfoList;
         }
 
-        Map<String, TableFieldInfo> map = fieldInfoList.stream()
-                .collect(Collectors.toMap(TableFieldInfo::fieldName, Function.identity()));
+        Map<String, TableColumnInfo> map = fieldInfoList.stream()
+                .collect(Collectors.toMap(TableColumnInfo::getFieldName, Function.identity()));
 
         // 按配置文件排序，因为列的顺序可以变更过
-        List<TableFieldInfo> result = new ArrayList<>();
+        List<TableColumnInfo> result = new ArrayList<>();
         for (String fieldName : config.getStockTableColumn()) {
-            TableFieldInfo fieldInfo = map.get(fieldName);
+            TableColumnInfo fieldInfo = map.get(fieldName);
             if (fieldInfo != null) {
                 result.add(fieldInfo);
                 map.remove(fieldName);

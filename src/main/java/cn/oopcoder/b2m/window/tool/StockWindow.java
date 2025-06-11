@@ -1,6 +1,6 @@
 package cn.oopcoder.b2m.window.tool;
 
-import cn.oopcoder.b2m.bean.TableFieldInfo;
+import cn.oopcoder.b2m.bean.TableColumnInfo;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.enums.ShowMode;
@@ -45,7 +45,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.oopcoder.b2m.consts.Const.ADD;
-import static cn.oopcoder.b2m.consts.Const.REMOVE;
 
 public class StockWindow {
 
@@ -305,7 +304,7 @@ public class StockWindow {
 
                 // 移动列，只会更改 TableColumn 的顺序，不会修改我们通过 setColumnIdentifiers 设置的表头
 
-                List<String> displayNames = tableModel.getTableColumns().stream()
+                List<String> displayNames = tableModel.getSystemTableColumns().stream()
                         .map(tableColumn -> (String) tableColumn.getHeaderValue())
                         .collect(Collectors.toList());
                 GlobalConfigManager.getInstance().persistStockTableColumn(displayNames);
@@ -377,13 +376,13 @@ public class StockWindow {
 
     private void createModel() {
 
-        List<TableFieldInfo> tableFieldInfos = GlobalConfigManager.getInstance().getStockTableFieldInfoOrder();
+        List<TableColumnInfo> tableFieldInfos = GlobalConfigManager.getInstance().getStockTableColumnInfoOrder();
 
         tableModel = new StockTableModel(table);
         table.setModel(tableModel);
 
         // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setTableFieldInfo(tableFieldInfos);
+        tableModel.setTableColumnInfos(tableFieldInfos);
 
         // 配置排序器
         tableModel.configRowSorter();
@@ -398,12 +397,12 @@ public class StockWindow {
                     return;
                 }
                 StockTableModel tableModel = (StockTableModel) e.getSource();
-                TableFieldInfo fieldInfo = tableModel.getTableFieldInfo(e.getColumn());
+                TableColumnInfo fieldInfo = tableModel.getTableColumnInfo(e.getColumn());
                 if (fieldInfo == null) {
                     return;
                 }
                 if (e.getType() == TableModelEvent.UPDATE) {
-                    if (fieldInfo.editable()) {
+                    if (fieldInfo.isEditable()) {
                         int row = e.getFirstRow();
                         int column = e.getColumn();
                         // todo 找到 该行的 code，最该map对应的值
@@ -428,7 +427,7 @@ public class StockWindow {
         refreshModel();
     }
 
-    public void configRenderer(List<TableFieldInfo> tableFieldInfos) {
+    public void configRenderer(List<TableColumnInfo> tableFieldInfos) {
 
         // todo 会导致默认的排序箭头不见了，暂时移除
 
@@ -447,12 +446,12 @@ public class StockWindow {
 
         // boolean selected = showModeCheckBox.isSelected();
 
-        for (TableFieldInfo tableFieldInfo : tableFieldInfos) {
+        for (TableColumnInfo tableFieldInfo : tableFieldInfos) {
 
-            TableColumn tableColumn = table.getColumn(tableFieldInfo.displayName());
+            TableColumn tableColumn = table.getColumn(tableFieldInfo.getDisplayName());
 
             // 设置默认的列宽，源码不建议使用setWidth()方法
-            tableColumn.setPreferredWidth(selected ? 50 : 90);
+            tableColumn.setPreferredWidth(selected ? 60 : 100);
 
             // 定制
             tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
@@ -473,9 +472,9 @@ public class StockWindow {
                     Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, viewRowIndex, viewColumnIndex);
                     // System.out.println(" 背景中： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
-                    if (!tableFieldInfo.displayColor().isEmpty()) {
+                    if (!tableFieldInfo.getDisplayColor().isEmpty()) {
                         // 设置文本颜色
-                        handleForeground(component, table, value, tableFieldInfo.displayColor());
+                        handleForeground(component, table, value, tableFieldInfo.getDisplayColor());
                     }
 
                     // 设置行背景色
@@ -501,7 +500,7 @@ public class StockWindow {
         double doubleValue = NumUtil.toDouble(Objects.toString(value).replace("%", ""));
         if (doubleValue > 0 && !colors.isEmpty()) {
             // 涨
-            component.setForeground(colors.getFirst());
+            component.setForeground(colors.get(0));
             return;
         }
 

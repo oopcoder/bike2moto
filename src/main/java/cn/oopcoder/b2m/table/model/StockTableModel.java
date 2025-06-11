@@ -2,7 +2,6 @@ package cn.oopcoder.b2m.table.model;
 
 import cn.oopcoder.b2m.config.StockConfig;
 
-import cn.oopcoder.b2m.consts.ColorHexConst;
 import cn.oopcoder.b2m.utils.StockDataUtil;
 
 import com.intellij.ui.table.JBTable;
@@ -19,7 +18,7 @@ import java.util.stream.Collectors;
 import javax.swing.table.TableColumn;
 
 import cn.oopcoder.b2m.bean.StockDataBean;
-import cn.oopcoder.b2m.bean.TableFieldInfo;
+import cn.oopcoder.b2m.bean.TableColumnInfo;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +36,7 @@ import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
  * fireTableDataChanged();
  */
 
-public class StockTableModel extends TableFieldInfoModel {
+public class StockTableModel extends TableColumnInfoModel {
 
     // 排序间隔，必须要大于 MOVE_FACTOR，
     // 不然在置顶、置底、上移、下移逻辑时会出现 index 相等的情况，从而导致一些奇怪的问题，
@@ -73,11 +72,11 @@ public class StockTableModel extends TableFieldInfoModel {
         // 清空表格模型
         setRowCount(0);
 
-        List<TableColumn> columnList = getTableColumns();
+        List<TableColumn> columnList = getSystemTableColumns();
         // 这里列的顺序可能变更过，恢复表头排序来取值
         columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
 
-        List<TableFieldInfo> fieldInfoList = columnList.stream()
+        List<TableColumnInfo> fieldInfoList = columnList.stream()
                 .map(tableColumn -> displayNameMap.get((String) tableColumn.getHeaderValue()))
                 .toList();
 
@@ -86,8 +85,8 @@ public class StockTableModel extends TableFieldInfoModel {
         stockDataBeans.forEach(stockDataBean -> {
             Vector<Object> vector = new Vector<>(fieldInfoList.size());
 
-            for (TableFieldInfo fieldInfo : fieldInfoList) {
-                String fieldName = fieldInfo.fieldName();
+            for (TableColumnInfo fieldInfo : fieldInfoList) {
+                String fieldName = fieldInfo.getFieldName();
                 Object fieldValue = stockDataBean.getFieldValue(fieldName);
                 // 涨幅
                 if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
@@ -112,7 +111,7 @@ public class StockTableModel extends TableFieldInfoModel {
 
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
 
-        String fieldName = getTableFieldInfo(modelColumnIndex).fieldName();
+        String fieldName = getTableColumnInfo(modelColumnIndex).getFieldName();
         stockDataBean.setFieldValue(fieldName, aValue);
 
         persistStockConfig(false);
@@ -132,7 +131,7 @@ public class StockTableModel extends TableFieldInfoModel {
      */
     public int getModelRowIndex(String code) {
         List<StockDataBean> stockDataBeans = getDefaultOrderStockDataBeanList();
-        return stockDataBeans.stream().map(StockDataBean::getCode).toList().indexOf(code);
+        return stockDataBeans.stream().map(StockDataBean::getCode).collect(Collectors.toList()).indexOf(code);
     }
 
     /**
@@ -180,7 +179,7 @@ public class StockTableModel extends TableFieldInfoModel {
                         .reversed()
                         .thenComparing(StockDataBean::getIndex)
                         .thenComparing(StockDataBean::getCode))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     /**

@@ -81,10 +81,10 @@ public class StockDataBean {
     // @TableColumn(name = "固定", order = 45)
     private boolean pinTop = false;
 
-    public static List<TableFieldInfo> hiddenTableFields = getTableColumns(Hidden);
-    public static List<TableFieldInfo> normalTableFields = getTableColumns(Normal);
+    public static List<TableColumnInfo> hiddenTableColumnInfos = getTableColumnInfos(Hidden);
+    public static List<TableColumnInfo> normalTableColumnInfos = getTableColumnInfos(Normal);
 
-    public static List<TableFieldInfo> getTableColumns(ShowMode showMode) {
+    public static List<TableColumnInfo> getTableColumnInfos(ShowMode showMode) {
         boolean isHidden = Hidden == showMode;
 
         return Arrays.stream(StockDataBean.class.getDeclaredFields())
@@ -113,10 +113,10 @@ public class StockDataBean {
                             }
                         }
                     }
-                    return new TableFieldInfo(f.getName(), displayName, displayColor, tc.order(),
+                    return new TableColumnInfo(f.getName(), displayName, displayColor, tc.order(),
                             tc.enableNumberComparator(), tc.editable());
                 })
-                .sorted(Comparator.comparingInt(TableFieldInfo::order))
+                .sorted(Comparator.comparingInt(TableColumnInfo::getOrder))
                 .collect(Collectors.toList());
     }
 

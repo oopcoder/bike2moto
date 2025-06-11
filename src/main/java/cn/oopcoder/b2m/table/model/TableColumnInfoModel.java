@@ -19,36 +19,36 @@ import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
-import cn.oopcoder.b2m.bean.TableFieldInfo;
+import cn.oopcoder.b2m.bean.TableColumnInfo;
 import cn.oopcoder.b2m.utils.NumUtil;
 
 /**
  * Created by oopcoder at 2025/6/2 15:32 .
  */
 
-public class TableFieldInfoModel extends DefaultTableModel {
+public class TableColumnInfoModel extends DefaultTableModel {
 
     protected JBTable table;
-    protected List<TableFieldInfo> tableFieldInfoList;
-    protected Map<String, TableFieldInfo> displayNameMap;
+    protected List<TableColumnInfo> tableColumnInfos;
+    protected Map<String, TableColumnInfo> displayNameMap;
     protected List<String> displayNameList;
-    protected Map<String, TableFieldInfo> fieldNameMap;
+    protected Map<String, TableColumnInfo> fieldNameMap;
     protected List<String> fieldNameList;
 
-    public TableFieldInfoModel(JBTable table) {
+    public TableColumnInfoModel(JBTable table) {
         this.table = table;
     }
 
-    public void setTableFieldInfo(List<TableFieldInfo> tableFieldInfoList) {
-        this.tableFieldInfoList = tableFieldInfoList;
-        this.displayNameMap = tableFieldInfoList.stream()
-                .collect(Collectors.toMap(TableFieldInfo::displayName, Function.identity()));
-        this.displayNameList = tableFieldInfoList.stream()
-                .map(TableFieldInfo::displayName).collect(Collectors.toList());
-        this.fieldNameMap = tableFieldInfoList.stream()
-                .collect(Collectors.toMap(TableFieldInfo::fieldName, Function.identity()));
-        this.fieldNameList = tableFieldInfoList.stream()
-                .map(TableFieldInfo::fieldName).collect(Collectors.toList());
+    public void setTableColumnInfos(List<TableColumnInfo> tableColumnInfos) {
+        this.tableColumnInfos = tableColumnInfos;
+        this.displayNameMap = tableColumnInfos.stream()
+                .collect(Collectors.toMap(TableColumnInfo::getDisplayName, Function.identity()));
+        this.displayNameList = tableColumnInfos.stream()
+                .map(TableColumnInfo::getDisplayName).collect(Collectors.toList());
+        this.fieldNameMap = tableColumnInfos.stream()
+                .collect(Collectors.toMap(TableColumnInfo::getFieldName, Function.identity()));
+        this.fieldNameList = tableColumnInfos.stream()
+                .map(TableColumnInfo::getFieldName).collect(Collectors.toList());
 
         setColumnIdentifiers(displayNameList.toArray());
     }
@@ -57,12 +57,12 @@ public class TableFieldInfoModel extends DefaultTableModel {
         return super.getColumnName(modelColumnIndex);
     }
 
-    public TableFieldInfo getTableFieldInfo(int modelColumnIndex) {
-        return tableFieldInfoList.get(modelColumnIndex);
+    public TableColumnInfo getTableColumnInfo(int modelColumnIndex) {
+        return tableColumnInfos.get(modelColumnIndex);
     }
 
-    public TableFieldInfo getTableFieldInfo(String fieldName) {
-        return tableFieldInfoList.get(getColumnIndex(fieldName));
+    public TableColumnInfo getTableColumnInfo(String fieldName) {
+        return tableColumnInfos.get(getColumnIndex(fieldName));
     }
 
     /**
@@ -78,7 +78,7 @@ public class TableFieldInfoModel extends DefaultTableModel {
         return rowVector.elementAt(codeIndex);
     }
 
-    public List<TableColumn> getTableColumns() {
+    public List<TableColumn> getSystemTableColumns() {
         TableColumnModel columnModel = table.getColumnModel();
         Enumeration<TableColumn> columns = columnModel.getColumns();
         Iterator<TableColumn> iterator = columns.asIterator();
@@ -101,9 +101,9 @@ public class TableFieldInfoModel extends DefaultTableModel {
         };
 
         // 有些字符串字段 要转成 数字进行排序
-        for (int i = 0; i < tableFieldInfoList.size(); i++) {
-            TableFieldInfo tableFieldInfo = tableFieldInfoList.get(i);
-            if (tableFieldInfo.enableNumberSorter()) {
+        for (int i = 0; i < tableColumnInfos.size(); i++) {
+            TableColumnInfo tableFieldInfo = tableColumnInfos.get(i);
+            if (tableFieldInfo.isEnableNumberSorter()) {
                 sorter.setComparator(i, doubleComparator);
             }
         }
@@ -114,7 +114,7 @@ public class TableFieldInfoModel extends DefaultTableModel {
 
     @Override
     public boolean isCellEditable(int row, int column) {
-        TableFieldInfo fieldInfo = tableFieldInfoList.get(column);
-        return fieldInfo.editable();
+        TableColumnInfo fieldInfo = tableColumnInfos.get(column);
+        return fieldInfo.isEditable();
     }
 }
