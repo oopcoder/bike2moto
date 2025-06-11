@@ -38,7 +38,9 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "242"
+            // 213表示2021.3月版本，242表示2024.2月版本
+            sinceBuild = "213"
+            // untilBuild = "262.*"
         }
 
         changeNotes = """
