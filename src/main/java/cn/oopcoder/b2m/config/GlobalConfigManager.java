@@ -90,32 +90,6 @@ public class GlobalConfigManager {
 
     }
 
-    /**
-     * @param displayNames 隐藏模式 是隐藏名，正常模式 是正常中文名
-     */
-    public void persistStockTableColumn(List<String> displayNames) {
-        if (config == null) {
-            config = new GlobalConfig();
-        }
-
-        List<TableColumnInfo> fieldInfoList = getDefaultTableColumnInfo();
-
-        Map<String, TableColumnInfo> fieldInfoMap = fieldInfoList.stream()
-                .collect(Collectors.toMap(TableColumnInfo::getDisplayName, Function.identity()));
-
-        // 要转成 真正的字段名
-        List<TableColumnConfig> fieldNameList = new ArrayList<>();
-
-        for (String displayName : displayNames) {
-            TableColumnInfo fieldInfo = fieldInfoMap.get(displayName);
-            TableColumnConfig columnConfig = new TableColumnConfig();
-            columnConfig.setFieldName(fieldInfo.getFieldName());
-            fieldNameList.add(columnConfig);
-        }
-        config.setStockTableColumnConfig(fieldNameList);
-        persist();
-    }
-
     public void persistStockConfig(List<StockConfig> stockConfig) {
         if (config == null) {
             config = new GlobalConfig();
@@ -139,33 +113,78 @@ public class GlobalConfigManager {
         return config.getStockConfig();
     }
 
+    public void persistStockTableColumnConfig(List<TableColumnConfig> tableColumnConfigs) {
+        if (config == null) {
+            config = new GlobalConfig();
+        }
+        config.setStockTableColumnConfig(isHiddenMode(), tableColumnConfigs);
+        persist();
+    }
+
+    public List<TableColumnConfig> getStockTableColumnConfig() {
+
+        if (config == null || config.getStockTableColumnConfig(isHiddenMode()) == null) {
+            // 第一次加载
+            List<TableColumnInfo> defaultTableColumnInfo = getDefaultTableColumnInfo();
+            List<TableColumnConfig> tableColumnConfigs = new ArrayList<>();
+            for (TableColumnInfo tableColumnInfo : defaultTableColumnInfo) {
+                TableColumnConfig columnConfig = new TableColumnConfig();
+                columnConfig.setFieldName(tableColumnInfo.getFieldName());
+                columnConfig.setPreferredWidth(isHiddenMode() ? 60 : 100);
+                tableColumnConfigs.add(columnConfig);
+            }
+            persistStockTableColumnConfig(tableColumnConfigs);
+            return tableColumnConfigs;
+        }
+
+        return config.getStockTableColumnConfig(isHiddenMode());
+    }
+
     private List<TableColumnInfo> getDefaultTableColumnInfo() {
         return isHiddenMode() ? StockDataBean.hiddenTableColumnInfos : StockDataBean.normalTableColumnInfos;
     }
+
+
+    /**
+     * @param displayNames 隐藏模式 是隐藏名，正常模式 是正常中文名
+     */
+    public void reOrderTableColumn(List<String> displayNames) {
+
+        List<TableColumnInfo> defaultTableColumnInfo = getDefaultTableColumnInfo();
+        Map<String, TableColumnInfo> tableColumnInfoMap = defaultTableColumnInfo.stream()
+                .collect(Collectors.toMap(TableColumnInfo::getDisplayName, Function.identity()));
+
+        List<TableColumnConfig> stockTableColumnConfig = getStockTableColumnConfig();
+        Map<String, TableColumnConfig> tableColumnConfigMap = stockTableColumnConfig.stream()
+                .collect(Collectors.toMap(TableColumnConfig::getFieldName, Function.identity()));
+
+        List<TableColumnConfig> orderList = new ArrayList<>();
+        // 重新排序
+        for (String displayName : displayNames) {
+            TableColumnInfo tableColumnInfo = tableColumnInfoMap.get(displayName);
+            TableColumnConfig columnConfig = tableColumnConfigMap.get(tableColumnInfo.getFieldName());
+            orderList.add(columnConfig);
+        }
+        persistStockTableColumnConfig(orderList);
+    }
+
 
     /**
      * 按配置文件排序，因为列的顺序可以变更过
      */
     public List<TableColumnInfo> getStockTableColumnInfoOrder() {
-        List<TableColumnInfo> fieldInfoList = getDefaultTableColumnInfo();
 
-        if (config == null || config.getStockTableColumnConfig() == null || config.getStockTableColumnConfig().isEmpty()) {
-            return fieldInfoList;
-        }
-
-        Map<String, TableColumnInfo> map = fieldInfoList.stream()
+        Map<String, TableColumnInfo> tableColumnInfoMap = getDefaultTableColumnInfo().stream()
                 .collect(Collectors.toMap(TableColumnInfo::getFieldName, Function.identity()));
 
+        List<TableColumnInfo> orderList = new ArrayList<>();
+
         // 按配置文件排序，因为列的顺序可以变更过
-        List<TableColumnInfo> result = new ArrayList<>();
-        for (TableColumnConfig fieldName : config.getStockTableColumnConfig()) {
-            TableColumnInfo fieldInfo = map.get(fieldName.getFieldName());
-            if (fieldInfo != null) {
-                result.add(fieldInfo);
-                map.remove(fieldName.getFieldName());
-            }
+        List<TableColumnConfig> stockTableColumnConfig = getStockTableColumnConfig();
+        for (TableColumnConfig tableColumnConfig : stockTableColumnConfig) {
+            TableColumnInfo tableColumnInfo = tableColumnInfoMap.get(tableColumnConfig.getFieldName());
+            orderList.add(tableColumnInfo);
         }
-        result.addAll(map.values());
-        return result;
+        return orderList;
     }
 }

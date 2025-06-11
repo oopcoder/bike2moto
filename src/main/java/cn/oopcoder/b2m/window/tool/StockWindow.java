@@ -307,7 +307,7 @@ public class StockWindow {
                 List<String> displayNames = tableModel.getSystemTableColumns().stream()
                         .map(tableColumn -> (String) tableColumn.getHeaderValue())
                         .collect(Collectors.toList());
-                GlobalConfigManager.getInstance().persistStockTableColumn(displayNames);
+                GlobalConfigManager.getInstance().reOrderTableColumn(displayNames);
             }
         });
 
@@ -376,13 +376,13 @@ public class StockWindow {
 
     private void createModel() {
 
-        List<TableColumnInfo> tableFieldInfos = GlobalConfigManager.getInstance().getStockTableColumnInfoOrder();
+        List<TableColumnInfo> tableColumnInfoOrder = GlobalConfigManager.getInstance().getStockTableColumnInfoOrder();
 
         tableModel = new StockTableModel(table);
         table.setModel(tableModel);
 
-        // 设置表头，界面上拖动列，使列顺序变了之后，如果重新设置表头，列的顺序会按设置顺序重新排列
-        tableModel.setTableColumnInfos(tableFieldInfos);
+        // 设置表头
+        tableModel.setTableColumnInfos(tableColumnInfoOrder);
 
         // 配置排序器
         tableModel.configRowSorter();
@@ -421,7 +421,7 @@ public class StockWindow {
         });
 
         // 配置渲染器
-        configRenderer(tableFieldInfos);
+        configRenderer(tableColumnInfoOrder);
 
         // 第一次刷新一下
         refreshModel();

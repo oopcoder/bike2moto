@@ -240,7 +240,7 @@ public class StockTableModel extends TableColumnInfoModel {
         List<StockDataBean> list = stockDataBeanMap.values().stream()
                 .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
                 .sorted(Comparator.comparing(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
-                .toList();
+                .collect(Collectors.toList());
         int index = list.indexOf(stockDataBean);
 
         if (index > 0) {
@@ -264,7 +264,7 @@ public class StockTableModel extends TableColumnInfoModel {
         List<StockDataBean> list = stockDataBeanMap.values().stream()
                 .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
                 .sorted(Comparator.comparing(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
-                .toList();
+                .collect(Collectors.toList());
         int index = list.indexOf(stockDataBean);
 
         if (index < list.size() - 1) {

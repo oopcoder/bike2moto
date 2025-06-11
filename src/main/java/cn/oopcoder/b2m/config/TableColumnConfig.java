@@ -6,6 +6,6 @@ import lombok.Data;
 public class TableColumnConfig {
 
     private String fieldName;
-    // private Integer preferredWidth;
+    private Integer preferredWidth;
 
 }
