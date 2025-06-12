@@ -16,6 +16,6 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="cn.oopcoder.b2m.factory.B2mToolWindowFactory" id="b2m" anchor="right"/>
+        <toolWindow factoryClass="cn.oopcoder.b2m.factory.B2mToolWindowFactory" id="b2m" anchor="right" icon="/icons/b2m.svg"/>
     </extensions>
 </idea-plugin>
