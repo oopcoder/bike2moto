@@ -7,7 +7,7 @@
 
     <description><![CDATA[
         牛马们！！摸一摸，单车变摩托！！🚴→🏍️
-        牛马们！！摸一摸，单车变摩托！！🚴→🏍️
+        韭菜们！！炒一炒，别墅靠大海！！🚴→🏍️
 
         https://gitee.com/oopcoder/bike2moto.git
         https://github.com/oopcoder/bike2moto.git
@@ -16,6 +16,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="cn.oopcoder.b2m.factory.B2mToolWindowFactory" id="b2m" anchor="right" icon="/icons/b2m.svg"/>
+        <toolWindow factoryClass="cn.oopcoder.b2m.factory.B2mToolWindowFactory" id="b2m" anchor="right"
+                    icon="/icons/b2m.svg"/>
     </extensions>
 </idea-plugin>
