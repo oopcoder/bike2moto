@@ -123,7 +123,9 @@ public class StockTableModel extends ColumnDefinitionTableModel {
      * @return 添加后的行号 modelRowIndex，-1 表示失败
      */
     public int addStock(String code) {
-        if (stockDataBeanMap.containsKey(code)) {
+        boolean codeExists = stockDataBeanMap.keySet().stream()
+                .anyMatch(key -> key.equalsIgnoreCase(code));
+        if (codeExists) {
             throw new RuntimeException("编码已经存在，请勿重复输入");
         }
         if (!StockDataUtil.isStockCode(code)) {
