@@ -40,7 +40,8 @@ intellijPlatform {
         ideaVersion {
             // 213表示2021.3月版本，242表示2024.2月版本
             sinceBuild = "213"
-            // untilBuild = "262.*"
+            // 不调整的话，会选取 242.* 作为默认值，看源码
+            untilBuild = "282.*"
         }
 
         changeNotes = """
