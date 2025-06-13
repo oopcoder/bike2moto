@@ -1,13 +1,19 @@
 package cn.oopcoder.b2m.table.model;
 
+import cn.oopcoder.b2m.dataSource.StockData;
+import cn.oopcoder.b2m.dataSource.StockDataListener;
+import cn.oopcoder.b2m.dataSource.StockDataManager;
+import cn.oopcoder.b2m.factory.ProjectHolder;
 import cn.oopcoder.b2m.utils.StockDataUtil;
 
+import cn.oopcoder.b2m.window.tool.StockWindow;
 import com.intellij.ui.table.JBTable;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.Vector;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,7 +30,6 @@ import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 import static cn.oopcoder.b2m.config.GlobalConfigManager.MOVE_FACTOR;
-import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
 
 /**
  * Created by oopcoder at 2025/6/2 15:32 .
@@ -34,12 +39,15 @@ import static cn.oopcoder.b2m.utils.StockDataUtil.updateStockData;
  * fireTableDataChanged();
  */
 
-public class StockTableModel extends ColumnDefinitionTableModel {
+public class StockTableModel extends ColumnDefinitionTableModel implements StockDataListener {
 
     private Map<String, StockDataBean> stockDataBeanMap;
+    private StockWindow stockWindow;
 
-    public StockTableModel(JBTable table) {
+    public StockTableModel(StockWindow stockWindow, JBTable table) {
         super(table);
+
+        this.stockWindow = stockWindow;
     }
 
     public void configStockDataBean(List<StockDataBean> stockDataBeanList) {
@@ -47,12 +55,26 @@ public class StockTableModel extends ColumnDefinitionTableModel {
                 collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
     }
 
-    public void refresh(boolean loadData) {
 
-        if (loadData) {
-            // 加载最新数据
-            updateStockData(stockDataBeanMap);
-        }
+    @Override
+    public Set<String> stockCodes() {
+        return stockDataBeanMap.keySet();
+    }
+
+    @Override
+    public void updateStockData(Map<String, StockData> stockDataMap) {
+        stockDataMap.forEach((code, stockData) -> {
+            StockDataBean stockDataBean = stockDataBeanMap.get(code);
+            if (stockDataBean != null) {
+                stockDataBean.copyFrom(stockData);
+            }
+        });
+        refreshTable();
+
+        stockWindow.refreshUI();
+    }
+
+    public void refreshTable() {
 
         // 清空表格模型
         setRowCount(0);
@@ -99,7 +121,7 @@ public class StockTableModel extends ColumnDefinitionTableModel {
         String fieldName = getColumnDefinition(modelColumnIndex).getFieldName();
         stockDataBean.setFieldValue(fieldName, aValue);
 
-        persistStockDataBean(false);
+        persistStockDataBean();
     }
 
     /**
@@ -135,8 +157,8 @@ public class StockTableModel extends ColumnDefinitionTableModel {
         stockDataBean.setCode(code);
         stockDataBean.setIndex(Integer.MAX_VALUE);
         stockDataBeanMap.put(code, stockDataBean);
-        persistStockDataBean(true);
-
+        persistStockDataBean();
+        StockDataManager.getInstance().refresh();
         return getModelRowIndex(stockDataBean.getCode());
 
     }
@@ -154,7 +176,7 @@ public class StockTableModel extends ColumnDefinitionTableModel {
 
     private void removeStock(String code) {
         stockDataBeanMap.remove(code);
-        persistStockDataBean(false);
+        persistStockDataBean();
     }
 
     /**
@@ -186,7 +208,7 @@ public class StockTableModel extends ColumnDefinitionTableModel {
         if (optional.isPresent()) {
             StockDataBean top = optional.get();
             stockDataBean.setIndex(top.getIndex() - MOVE_FACTOR);
-            persistStockDataBean(false);
+            persistStockDataBean();
             return getModelRowIndex(stockDataBean.getCode());
         }
         return -1;
@@ -209,7 +231,7 @@ public class StockTableModel extends ColumnDefinitionTableModel {
         if (optional.isPresent()) {
             StockDataBean bottom = optional.get();
             stockDataBean.setIndex(bottom.getIndex() + MOVE_FACTOR);
-            persistStockDataBean(false);
+            persistStockDataBean();
             return getModelRowIndex(stockDataBean.getCode());
         }
         return -1;
@@ -233,7 +255,7 @@ public class StockTableModel extends ColumnDefinitionTableModel {
         if (index > 0) {
             StockDataBean preStockDataBean = list.get(index - 1);
             stockDataBean.setIndex(preStockDataBean.getIndex() - MOVE_FACTOR);
-            persistStockDataBean(false);
+            persistStockDataBean();
             return modelRowIndex - 1;
         }
         return modelRowIndex;
@@ -257,7 +279,7 @@ public class StockTableModel extends ColumnDefinitionTableModel {
         if (index < list.size() - 1) {
             StockDataBean nextStockDataBean = list.get(index + 1);
             stockDataBean.setIndex(nextStockDataBean.getIndex() + MOVE_FACTOR);
-            persistStockDataBean(false);
+            persistStockDataBean();
             return modelRowIndex + 1;
         }
         return modelRowIndex;
@@ -290,7 +312,7 @@ public class StockTableModel extends ColumnDefinitionTableModel {
                     .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
         }
         stockDataBean.setPinTop(!pinTop);
-        persistStockDataBean(false);
+        persistStockDataBean();
 
         return getModelRowIndex(stockDataBean.getCode());
     }
@@ -313,11 +335,18 @@ public class StockTableModel extends ColumnDefinitionTableModel {
         return stockDataBeanMap.get(stockCode);
     }
 
-    private void persistStockDataBean(boolean loadData) {
+    private void persistStockDataBean() {
         List<StockDataBean> stockDataBeans = getDefaultOrderStockDataBeanList();
         GlobalConfigManager.getInstance().persistStockDataBean(stockDataBeans);
-        // 修改过数据，刷新一下
-        refresh(loadData);
 
+        // 修改过数据，刷新一下当前页面
+        refreshTable();
+
+        // 更新其他窗口
+        List<ProjectHolder> projectHolders = ProjectHolder.getProjectHolderExclude(stockWindow);
+        for (ProjectHolder projectHolder : projectHolders) {
+            System.out.println("项目即将更新: " + projectHolder.getProject().getName());
+            projectHolder.getStockWindow().updateUIAfterConfigRefresh();
+        }
     }
 }

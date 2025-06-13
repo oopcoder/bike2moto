@@ -1,6 +1,7 @@
 package cn.oopcoder.b2m.bean;
 
 import cn.oopcoder.b2m.config.StockConfig;
+import cn.oopcoder.b2m.dataSource.StockData;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 
@@ -138,6 +139,21 @@ public class StockDataBean {
 
         return null;
     }
+
+
+    public void copyFrom(StockData stockDataBean) {
+        try {
+            Field[] fields = StockData.class.getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Object o = field.get(stockDataBean);
+                setFieldValue(field.getName(), o);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public void setFieldValue(String fieldName, Object value) {
         try {

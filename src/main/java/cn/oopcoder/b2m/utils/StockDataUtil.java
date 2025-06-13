@@ -1,13 +1,16 @@
 package cn.oopcoder.b2m.utils;
 
+import cn.oopcoder.b2m.bean.StockDataBean;
+import cn.oopcoder.b2m.dataSource.StockData;
+import lombok.Data;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
-
-import cn.oopcoder.b2m.bean.StockDataBean;
+import java.util.Set;
 
 /**
  * Created by oopcoder at 2025/6/2 16:07 .
@@ -15,8 +18,10 @@ import cn.oopcoder.b2m.bean.StockDataBean;
 
 public class StockDataUtil {
 
-    public static void updateStockData(Map<String, StockDataBean> stockDataBeanMap) {
-        String codes = String.join(",", stockDataBeanMap.keySet());
+    public static Map<String, StockData> updateStockData(Set<String> elements) {
+        Map<String, StockData> stockDataBeanMap = new HashMap<>();
+        // Set<String> elements = stockDataBeanMap.keySet();
+        String codes = String.join(",", elements);
         try {
             String result = getStockData(codes);
 
@@ -26,10 +31,8 @@ public class StockDataUtil {
                 String dataStr = line.substring(line.indexOf("=") + 2, line.length() - 2);
                 String[] values = dataStr.split("~");
 
-                StockDataBean stockDataBean = stockDataBeanMap.get(code);
-                if (stockDataBean == null) {
-                    continue;
-                }
+                StockData stockDataBean = new StockData();
+                stockDataBean.setCode(code);
 
                 stockDataBean.setName(values[1]);
                 stockDataBean.setChange(values[31]);
@@ -46,12 +49,14 @@ public class StockDataUtil {
                 stockDataBean.setHigh(values[33]);// 33
                 stockDataBean.setLow(values[34]);// 34
 
+                stockDataBeanMap.put(code, stockDataBean);
                 // System.out.println("parse(): " + stockDataBean);
 
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return stockDataBeanMap;
     }
 
 
@@ -73,5 +78,6 @@ public class StockDataUtil {
         // 抛异常认为是股票代码，后续发现不是股票代码可以在界面上面做删除操作
         return true;
     }
+
 
 }

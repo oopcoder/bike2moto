@@ -3,6 +3,7 @@ package cn.oopcoder.b2m.window.tool;
 import cn.oopcoder.b2m.bean.ColumnDefinition;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.consts.Const;
+import cn.oopcoder.b2m.dataSource.StockDataManager;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.table.model.StockTableModel;
 
@@ -16,6 +17,7 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.project.Project;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
@@ -54,7 +56,7 @@ public class StockWindow {
     private JBTable table;
     private JBLabel refreshTimeLabel;
     // private JBCheckBox showModeCheckBox;
-    private volatile boolean refreshing = false;
+    private volatile boolean refresh = false;
     private volatile boolean selected = true;
     private StockTableModel tableModel;
     private AnActionButton addAction;
@@ -194,7 +196,7 @@ public class StockWindow {
         AnAction refreshTableAction = new AnActionButton(Const.REFRESH_TABLE, AllIcons.Actions.Refresh) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                refreshModel();
+                StockDataManager.getInstance().refresh();
             }
 
             @Override
@@ -205,16 +207,24 @@ public class StockWindow {
         AnAction continueRefreshTableAction = new AnActionButton(Const.CONTINUE_REFRESH_TABLE, AllIcons.Toolwindows.ToolWindowRun) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                refreshing = !refreshing;
-                e.getPresentation().setIcon(refreshing ? AllIcons.Actions.Pause : AllIcons.Toolwindows.ToolWindowRun);
-                e.getPresentation().setText(refreshing ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
+                refresh = !refresh;
+                e.getPresentation().setIcon(refresh ? AllIcons.Actions.Pause : AllIcons.Toolwindows.ToolWindowRun);
+                e.getPresentation().setText(refresh ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
 
-                toggleScheduledJob(refreshing);
+                toggleScheduledJob(refresh);
             }
 
             @Override
             public @NotNull ActionUpdateThread getActionUpdateThread() {
                 return ActionUpdateThread.EDT;
+            }
+
+            public void toggleScheduledJob(boolean start) {
+                if (start) {
+                    StockDataManager.getInstance().start();
+                    return;
+                }
+                StockDataManager.getInstance().stop();
             }
         };
         AnAction resetDefaultConfigAction = new AnActionButton(Const.RESET_DEFAULT_CONFIG, Icons.ICON_RESET_DEFAULT_CONFIG) {
@@ -375,9 +385,14 @@ public class StockWindow {
         // table.setStriped(!jbCheckBox.isSelected());
     }
 
-    private void createModel() {
 
-        tableModel = new StockTableModel(table);
+    public void createModel() {
+        if (tableModel != null) {
+            StockDataManager.getInstance().unregister(tableModel);
+        }
+        tableModel = new StockTableModel(this, table);
+        StockDataManager.getInstance().register(tableModel);
+
         table.setModel(tableModel);
 
         // 设置表头
@@ -423,7 +438,7 @@ public class StockWindow {
         configRenderer();
 
         // 第一次刷新一下
-        refreshModel();
+        StockDataManager.getInstance().refresh();
     }
 
     public void configRenderer() {
@@ -469,7 +484,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -529,7 +544,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-            int viewRowIndex, int viewColumnIndex) {
+                                  int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");
@@ -543,26 +558,20 @@ public class StockWindow {
         // System.out.println("自定义背景颜色: " + backgroundColor + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
     }
 
-    public void toggleScheduledJob(boolean start) {
-        System.out.println("启停定时任务: " + start);
-        if (!start) {
-            return;
-        }
-        new Thread(() -> {
-            while (refreshing) {
-                refreshModel();
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }).start();
-    }
-
-    public void refreshModel() {
-        tableModel.refresh(true);
+    public void refreshUI() {
         SwingUtilities.invokeLater(() -> refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
     }
 
+    /**
+     * 项目关闭时，资源回收
+     */
+    public void projectClosing(Project project) {
+        StockDataManager.getInstance().unregister(tableModel);
+    }
+
+    public void updateUIAfterConfigRefresh() {
+        createModel();
+        //  更新工具栏
+
+    }
 }

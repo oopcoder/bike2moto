@@ -2,6 +2,8 @@ package cn.oopcoder.b2m.factory;
 
 import cn.oopcoder.b2m.window.tool.StockWindow;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.project.ProjectManagerListener;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.content.Content;
@@ -9,17 +11,15 @@ import com.intellij.ui.content.ContentFactory;
 import com.intellij.ui.content.ContentManager;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 /**
  * idea启动后，第一次打开项目时创建实例，多个项目共享一个实例
  */
 public class B2mToolWindowFactory implements ToolWindowFactory {
 
-    // 使用静态变量是为了 多个项目共享一个窗口
-    static StockWindow stockWindow;
-
 
     public B2mToolWindowFactory() {
-        stockWindow = new StockWindow();
     }
 
     /**
@@ -43,9 +43,33 @@ public class B2mToolWindowFactory implements ToolWindowFactory {
 
         ContentManager contentManager = toolWindow.getContentManager();
         ContentFactory factory = contentManager.getFactory();
+        StockWindow stockWindow = new StockWindow();
 
         Content stockContent = factory.createContent(stockWindow.rootPanel, "good luck", true);
         contentManager.addContent(stockContent);
+
+        ProjectHolder.addProjectHolder(project, stockWindow);
+
+        ProjectManager.getInstance().addProjectManagerListener(project, new ProjectManagerListener() {
+            @Override
+            public void projectClosing(@NotNull Project project) {
+                // 项目关闭前的回调
+                System.out.println("项目即将关闭: " + project.getName());
+
+                stockWindow.projectClosing(project);
+
+                ProjectHolder projectHolder = ProjectHolder.removeProjectHolder(project);
+                if (projectHolder != null) {
+                    // projectHolder.stockWindow.projectClosing(project);
+                }
+            }
+
+            @Override
+            public void projectClosed(@NotNull Project project) {
+                // 项目完全关闭后的回调
+                System.out.println("项目已关闭: " + project.getName());
+            }
+        });
 
     }
 
