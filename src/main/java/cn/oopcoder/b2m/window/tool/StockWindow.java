@@ -5,6 +5,7 @@ import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.dataSource.StockDataManager;
 import cn.oopcoder.b2m.enums.ShowMode;
+import cn.oopcoder.b2m.factory.ProjectHolder;
 import cn.oopcoder.b2m.table.model.StockTableModel;
 
 import cn.oopcoder.b2m.table.listener.TableColumnModelAdapter;
@@ -21,6 +22,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
+import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 
@@ -36,6 +38,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.plaf.basic.BasicCheckBoxUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
@@ -55,8 +58,8 @@ public class StockWindow {
     public JPanel rootPanel;
     private JBTable table;
     private JBLabel refreshTimeLabel;
-    // private JBCheckBox showModeCheckBox;
-    private volatile boolean refresh = false;
+    private JCheckBox refreshCheckBox;
+    // private volatile boolean scheduledRefresh = false;
     private volatile boolean selected = true;
     private StockTableModel tableModel;
     private AnActionButton addAction;
@@ -66,6 +69,9 @@ public class StockWindow {
     private AnActionButton moveTopAction;
     private AnActionButton moveBottomAction;
     private AnActionButton pinTopAction;
+    // private AnActionButton continueRefreshTableAction;
+    private ToolbarDecorator toolbarDecorator;
+    private JPanel tablePanel;
 
     public StockWindow() {
         createUI();
@@ -204,29 +210,22 @@ public class StockWindow {
                 return ActionUpdateThread.EDT;
             }
         };
-        AnAction continueRefreshTableAction = new AnActionButton(Const.CONTINUE_REFRESH_TABLE, AllIcons.Toolwindows.ToolWindowRun) {
-            @Override
-            public void actionPerformed(@NotNull AnActionEvent e) {
-                refresh = !refresh;
-                e.getPresentation().setIcon(refresh ? AllIcons.Actions.Pause : AllIcons.Toolwindows.ToolWindowRun);
-                e.getPresentation().setText(refresh ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
-
-                toggleScheduledJob(refresh);
-            }
-
-            @Override
-            public @NotNull ActionUpdateThread getActionUpdateThread() {
-                return ActionUpdateThread.EDT;
-            }
-
-            public void toggleScheduledJob(boolean start) {
-                if (start) {
-                    StockDataManager.getInstance().start();
-                    return;
-                }
-                StockDataManager.getInstance().stop();
-            }
-        };
+        // continueRefreshTableAction = new AnActionButton(Const.CONTINUE_REFRESH_TABLE, AllIcons.Toolwindows.ToolWindowRun) {
+        //     @Override
+        //     public void actionPerformed(@NotNull AnActionEvent e) {
+        //         scheduledRefresh = !scheduledRefresh;
+        //         e.getPresentation().setIcon(scheduledRefresh ? AllIcons.Actions.Pause : AllIcons.Toolwindows.ToolWindowRun);
+        //         e.getPresentation().setText(scheduledRefresh ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
+        //
+        //         toggleScheduledJob(scheduledRefresh);
+        //     }
+        //
+        //     @Override
+        //     public @NotNull ActionUpdateThread getActionUpdateThread() {
+        //         return ActionUpdateThread.EDT;
+        //     }
+        //
+        // };
         AnAction resetDefaultConfigAction = new AnActionButton(Const.RESET_DEFAULT_CONFIG, Icons.ICON_RESET_DEFAULT_CONFIG) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
@@ -269,15 +268,14 @@ public class StockWindow {
                 return ActionUpdateThread.EDT;
             }
         };
-        ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(table);
-        JPanel tablePanel = toolbarDecorator
-                .addExtraAction(showModeAction)
-                .addExtraActions(refreshTableAction, continueRefreshTableAction)
+        toolbarDecorator = ToolbarDecorator.createDecorator(table);
+        tablePanel = toolbarDecorator
+                .addExtraActions(refreshTableAction)
                 .addExtraActions(addAction, removeAction)
                 .addExtraActions(moveUpAction, moveDownAction)
                 .addExtraActions(moveTopAction, moveBottomAction)
                 .addExtraAction(pinTopAction)
-                .addExtraActions(resetDefaultConfigAction)
+                .addExtraActions(showModeAction, resetDefaultConfigAction)
                 .createPanel();
 
         rootPanel.add(tablePanel, BorderLayout.CENTER);
@@ -288,22 +286,34 @@ public class StockWindow {
         refreshTimeLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
         toolbarDecorator.getActionsPanel().add(refreshTimeLabel, BorderLayout.EAST);
 
-        // showModeCheckBox = new JBCheckBox();
-        // showModeCheckBox.setToolTipText("隐蔽模式");
-        // // 默认图标
-        // showModeCheckBox.setOpaque(false); // 避免背景覆盖
-        // showModeCheckBox.setBorderPainted(false); // 移除边框
-        // showModeCheckBox.setIcon(Icons.ICON_CHECKBOX_UNSELECTED);
-        // showModeCheckBox.setSelectedIcon(Icons.ICON_CHECKBOX_SELECTED);
-        // showModeCheckBox.setTextIcon(Icons.ICON_CHECKBOX_SELECTED);
-        //
-        // showModeCheckBox.setSelected(true);
-        // showModeCheckBox.addActionListener(e -> {
-        //     beautifyTable();
-        //     GlobalConfigManager.getInstance().setShowMode(showModeCheckBox.isSelected() ? ShowMode.Hidden : ShowMode.Normal);
-        //     createModel();
-        // });
-        // toolbarDecorator.getActionsPanel().add(showModeCheckBox, BorderLayout.WEST);
+        // 在ToolbarDecorator放不了，因为没找到从外部更新图标的方法
+        refreshCheckBox = new JBCheckBox();
+        refreshCheckBox.setToolTipText(Const.CONTINUE_REFRESH_TABLE);
+        // 强制使用自定义 UI，不然图标就是无法更改
+        refreshCheckBox.setUI(new BasicCheckBoxUI());
+        refreshCheckBox.setIcon(AllIcons.Toolwindows.ToolWindowRun);
+        refreshCheckBox.setSelectedIcon(AllIcons.Actions.Pause);
+        toolbarDecorator.getActionsPanel().add(refreshCheckBox, BorderLayout.WEST);
+
+        ProjectHolder existProject = ProjectHolder.getFirstProjectHolderExclude(this);
+        if (existProject != null) {
+            refreshCheckBox.setSelected(existProject.getStockWindow().refreshCheckBox.isSelected());
+        }
+
+        refreshCheckBox.addActionListener(e -> {
+            JBCheckBox source = (JBCheckBox) e.getSource();
+
+            source.setToolTipText(source.isSelected() ? Const.STOP_REFRESH_TABLE :
+                    Const.CONTINUE_REFRESH_TABLE);
+            toggleScheduledJob(source.isSelected());
+
+            // 更新其他窗口的图标
+            List<ProjectHolder> projectHolders = ProjectHolder.getProjectHolderExclude(this);
+            for (ProjectHolder projectHolder : projectHolders) {
+                System.out.println("项目即将更新: " + projectHolder.getProject().getName());
+                projectHolder.getStockWindow().updateCheckBox(source.isSelected());
+            }
+        });
 
         beautifyTable();
 
@@ -356,9 +366,17 @@ public class StockWindow {
         enabledActionOnSelectRow();
     }
 
+    public void toggleScheduledJob(boolean start) {
+        if (start) {
+            StockDataManager.getInstance().start();
+            return;
+        }
+        StockDataManager.getInstance().stop();
+    }
+
     private void enabledActionOnSelectRow() {
         int selectedRow = table.getSelectedRow();
-        System.out.println("selectedRow: " + selectedRow);
+        // System.out.println("selectedRow: " + selectedRow);
 
         boolean isSelect = selectedRow != -1;
 
@@ -384,7 +402,6 @@ public class StockWindow {
         // 设置表格条纹（斑马线） darcula 主题才有显示，其他主题可能不明显，看不出来
         // table.setStriped(!jbCheckBox.isSelected());
     }
-
 
     public void createModel() {
         if (tableModel != null) {
@@ -484,7 +501,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -544,7 +561,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-                                  int viewRowIndex, int viewColumnIndex) {
+            int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");
@@ -569,9 +586,18 @@ public class StockWindow {
         StockDataManager.getInstance().unregister(tableModel);
     }
 
+    // 外部更新
     public void updateUIAfterConfigRefresh() {
         createModel();
         //  更新工具栏
 
+    }
+
+    // 外部更新
+    public void updateCheckBox(boolean selected) {
+        // 代码设置的，监听器不会回调
+        refreshCheckBox.setSelected(selected);
+        refreshCheckBox.setToolTipText(selected ? Const.STOP_REFRESH_TABLE :
+                Const.CONTINUE_REFRESH_TABLE);
     }
 }

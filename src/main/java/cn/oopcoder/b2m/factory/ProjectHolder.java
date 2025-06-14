@@ -21,27 +21,27 @@ public class ProjectHolder {
 
     private static List<ProjectHolder> projectHolderList = new ArrayList<>();
 
-    Project project;
+    private Project project;
 
-    StockWindow stockWindow;
-
+    private StockWindow stockWindow;
 
     public static ProjectHolder removeProjectHolder(Project project) {
+        System.out.println(project.getName() + " 项目从缓存清除");
         ProjectHolder projectHolder = getProjectHolder(project);
         if (projectHolder == null) {
             return null;
         }
         projectHolderList.remove(projectHolder);
-
         return projectHolder;
     }
 
 
     public static void addProjectHolder(Project project, StockWindow stockWindow) {
+        System.out.println(project.getName() + " 项目被缓存起来了");
         projectHolderList.add(new ProjectHolder(project, stockWindow));
     }
 
-    public static ProjectHolder getProjectHolder(Project project) {
+    private static ProjectHolder getProjectHolder(Project project) {
         for (ProjectHolder projectHolder : projectHolderList) {
             if (projectHolder.getProject().equals(project)) {
                 return projectHolder;
@@ -50,7 +50,7 @@ public class ProjectHolder {
         return null;
     }
 
-    public static ProjectHolder getProjectHolder(StockWindow stockWindow) {
+    private static ProjectHolder getProjectHolder(StockWindow stockWindow) {
         for (ProjectHolder projectHolder : projectHolderList) {
             if (projectHolder.getStockWindow().equals(stockWindow)) {
                 return projectHolder;
@@ -63,6 +63,13 @@ public class ProjectHolder {
         return projectHolderList.stream()
                 .filter(projectHolder -> !projectHolder.getStockWindow().equals(stockWindow))
                 .collect(Collectors.toList());
+    }
+
+    public static  ProjectHolder  getFirstProjectHolderExclude(StockWindow stockWindow) {
+        return projectHolderList.stream()
+                .filter(projectHolder -> !projectHolder.getStockWindow().equals(stockWindow))
+                .findFirst(). orElse(null);
+
     }
 
 

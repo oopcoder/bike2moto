@@ -47,6 +47,7 @@ public class B2mToolWindowFactory implements ToolWindowFactory {
 
         Content stockContent = factory.createContent(stockWindow.rootPanel, "good luck", true);
         contentManager.addContent(stockContent);
+        System.out.println(project.getName() + " 的插件窗口第一次可见时调用");
 
         ProjectHolder.addProjectHolder(project, stockWindow);
 
