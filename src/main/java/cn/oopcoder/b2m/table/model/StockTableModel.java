@@ -7,6 +7,7 @@ import cn.oopcoder.b2m.factory.ProjectHolder;
 import cn.oopcoder.b2m.utils.StockDataUtil;
 
 import cn.oopcoder.b2m.window.tool.StockWindow;
+
 import com.intellij.ui.table.JBTable;
 
 import java.util.Comparator;
@@ -24,6 +25,7 @@ import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.ColumnDefinition;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_FIELD_NAME;
@@ -54,7 +56,6 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         this.stockDataBeanMap = stockDataBeanList.stream().
                 collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
     }
-
 
     @Override
     public Set<String> stockCodes() {
@@ -95,13 +96,16 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
             for (ColumnDefinition fieldInfo : fieldInfoList) {
                 String fieldName = fieldInfo.getFieldName();
                 Object fieldValue = stockDataBean.getFieldValue(fieldName);
-                // 涨幅
-                if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
-                    fieldValue = fieldValue + "%";
-                }
-                if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName) || CHANGE_FIELD_NAME.equals(fieldName)) {
-                    if (!fieldValue.toString().startsWith("-")) {
-                        fieldValue = "+" + fieldValue;
+
+                if (ObjectUtils.isNotEmpty(fieldValue)) {
+                    // 涨幅
+                    if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
+                        fieldValue = fieldValue + "%";
+                    }
+                    if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName) || CHANGE_FIELD_NAME.equals(fieldName)) {
+                        if (!fieldValue.toString().startsWith("-")) {
+                            fieldValue = "+" + fieldValue;
+                        }
                     }
                 }
                 vector.addElement(fieldValue);
@@ -158,6 +162,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         stockDataBean.setIndex(Integer.MAX_VALUE);
         stockDataBeanMap.put(code, stockDataBean);
         persistStockDataBean();
+
         StockDataManager.getInstance().refresh();
         return getModelRowIndex(stockDataBean.getCode());
 
@@ -342,11 +347,11 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         // 修改过数据，刷新一下当前页面
         refreshTable();
 
-        // 更新其他窗口
+        // 更新其他窗口的model
         List<ProjectHolder> projectHolders = ProjectHolder.getProjectHolderExclude(stockWindow);
         for (ProjectHolder projectHolder : projectHolders) {
             System.out.println("项目即将更新: " + projectHolder.getProject().getName());
-            projectHolder.getStockWindow().updateUIAfterConfigRefresh();
+            projectHolder.getStockWindow().createModel();
         }
     }
 }
