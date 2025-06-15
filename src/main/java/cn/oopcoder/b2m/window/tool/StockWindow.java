@@ -36,12 +36,14 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.plaf.basic.BasicCheckBoxUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 
 import java.awt.*;
 import java.util.Date;
@@ -106,7 +108,6 @@ public class StockWindow {
             public @NotNull ActionUpdateThread getActionUpdateThread() {
                 return ActionUpdateThread.EDT;
             }
-
         };
         removeAction = new AnActionButton(Const.REMOVE, Icons.ICON_REMOVE) {
             @Override
@@ -121,7 +122,6 @@ public class StockWindow {
             public @NotNull ActionUpdateThread getActionUpdateThread() {
                 return ActionUpdateThread.EDT;
             }
-
         };
 
         moveUpAction = new AnActionButton(Const.MOVE_UP, Icons.ICON_MOVE_UP) {
@@ -138,7 +138,6 @@ public class StockWindow {
             public @NotNull ActionUpdateThread getActionUpdateThread() {
                 return ActionUpdateThread.EDT;
             }
-
         };
         moveDownAction = new AnActionButton(Const.MOVE_DOWN, Icons.ICON_MOVE_DOWN) {
             @Override
@@ -244,12 +243,9 @@ public class StockWindow {
         selectedHidden = GlobalConfigManager.getInstance().getShowMode() == Hidden;
 
         AnActionButton showModeAction = new AnActionButton(selectedHidden ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN,
-                selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
+                                                           selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                // 持久化列宽 todo 监听项目退出时持久化
-                GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                        tableModel.getSystemTableColumns());
 
                 selectedHidden = !selectedHidden;
                 e.getPresentation().setIcon(selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED);
@@ -314,6 +310,7 @@ public class StockWindow {
         // 列移动监听
         table.getColumnModel().addColumnModelListener(new TableColumnModelAdapter() {
 
+            // 列位置改变
             @Override
             public void columnMoved(TableColumnModelEvent e) {
                 if (e.getFromIndex() == e.getToIndex()) {
@@ -323,7 +320,20 @@ public class StockWindow {
 
                 // 移动列，只会更改 TableColumn 的顺序，不会修改我们通过 setColumnIdentifiers 设置的表头
                 GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                        tableModel.getSystemTableColumns());
+                                                                           tableModel.getSystemTableColumns());
+            }
+
+            // 列宽度改变
+            @Override
+            public void columnMarginChanged(ChangeEvent e) {
+                TableColumnModel model = table.getColumnModel();
+                for (int i = 0; i < model.getColumnCount(); i++) {
+                    System.out.printf("Column %d (%s) width: %d%n",
+                                      i, model.getColumn(i).getHeaderValue(), model.getColumn(i).getWidth());
+                }
+
+                GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
+                                                                           tableModel.getSystemTableColumns());
             }
         });
 
@@ -332,18 +342,18 @@ public class StockWindow {
 
         // 添加编辑器监听
         table.getDefaultEditor(Object.class)
-                .addCellEditorListener(new CellEditorListener() {
-                    @Override
-                    public void editingStopped(ChangeEvent e) {
-                        // 可以在这里获取编辑后的值
-                        System.out.println("单元格 编辑器监听");
-                    }
+             .addCellEditorListener(new CellEditorListener() {
+                 @Override
+                 public void editingStopped(ChangeEvent e) {
+                     // 可以在这里获取编辑后的值
+                     System.out.println("单元格 编辑器监听");
+                 }
 
-                    @Override
-                    public void editingCanceled(ChangeEvent e) {
-                        // 编辑取消处理
-                    }
-                });
+                 @Override
+                 public void editingCanceled(ChangeEvent e) {
+                     // 编辑取消处理
+                 }
+             });
 
         // 获取行选择模型
         ListSelectionModel selectionModel = table.getSelectionModel();
@@ -393,7 +403,6 @@ public class StockWindow {
             int viewRowIndex = table.convertRowIndexToView(modelRowIndex);
             table.setRowSelectionInterval(viewRowIndex, viewRowIndex); // 选中单行
         }
-
     }
 
     public void createModel() {
@@ -472,7 +481,7 @@ public class StockWindow {
 
         List<ColumnDefinition> columnDefinitions = tableModel.getColumnDefinitions();
         Map<String, ColumnDefinition> tableColumnInfoMap = columnDefinitions.stream()
-                .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
+                                                                            .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
 
         List<TableColumn> systemTableColumns = tableModel.getSystemTableColumns();
         for (TableColumn tableColumn : systemTableColumns) {
@@ -576,9 +585,6 @@ public class StockWindow {
      * 项目关闭时，资源回收
      */
     public void projectClosing(Project project) {
-
-        GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                tableModel.getSystemTableColumns());
 
         StockDataManager.getInstance().unregister(tableModel);
     }
