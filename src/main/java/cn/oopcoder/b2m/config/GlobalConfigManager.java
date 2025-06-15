@@ -56,12 +56,12 @@ public class GlobalConfigManager {
 
     private volatile GlobalConfig config;
 
-    @Setter
-    private ShowMode showMode = Hidden;
-
-    public boolean isHiddenMode() {
-        return showMode == Hidden;
-    }
+    // @Setter
+    // private ShowMode showMode = Hidden;
+    //
+    // public boolean isHiddenMode() {
+    //     return showMode == Hidden;
+    // }
 
     public void refresh() {
         String configJson = propertiesComponent.getValue(GLOBAL_CONFIG_KEY);
@@ -149,19 +149,19 @@ public class GlobalConfigManager {
         return config.getStockConfig();
     }
 
-    private void persistStockColumnConfig(List<ColumnConfig> tableColumnConfigs) {
+    private void persistStockColumnConfig(boolean isHiddenMode, List<ColumnConfig> tableColumnConfigs) {
         if (config == null) {
             config = new GlobalConfig();
         }
-        config.setStockColumnConfig(isHiddenMode(), tableColumnConfigs);
+        config.setStockColumnConfig(isHiddenMode, tableColumnConfigs);
         persist();
     }
 
-    private List<ColumnConfig> getStockColumnConfig() {
+    private List<ColumnConfig> getStockColumnConfig(boolean isHiddenMode) {
 
-        if (config == null || config.getStockColumnConfig(isHiddenMode()) == null) {
+        if (config == null || config.getStockColumnConfig(isHiddenMode) == null) {
             // 第一次加载
-            List<ColumnDefinition> defaultTableColumnInfo = getDefaultTableColumnInfo();
+            List<ColumnDefinition> defaultTableColumnInfo = getDefaultTableColumnInfo(isHiddenMode);
             List<ColumnConfig> tableColumnConfigs = new ArrayList<>();
             for (ColumnDefinition definition : defaultTableColumnInfo) {
                 ColumnConfig columnConfig = new ColumnConfig();
@@ -169,15 +169,15 @@ public class GlobalConfigManager {
                 columnConfig.setPreferredWidth(definition.getPreferredWidth());
                 tableColumnConfigs.add(columnConfig);
             }
-            persistStockColumnConfig(tableColumnConfigs);
+            persistStockColumnConfig(isHiddenMode, tableColumnConfigs);
             return tableColumnConfigs;
         }
 
-        return config.getStockColumnConfig(isHiddenMode());
+        return config.getStockColumnConfig(isHiddenMode);
     }
 
-    private List<ColumnDefinition> getDefaultTableColumnInfo() {
-        if (isHiddenMode()) {
+    private List<ColumnDefinition> getDefaultTableColumnInfo(boolean isHiddenMode) {
+        if (isHiddenMode) {
             if (hiddenTableColumnInfos == null) {
                 hiddenTableColumnInfos = StockDataBean.getTableColumnInfos(Hidden);
             }
@@ -192,13 +192,13 @@ public class GlobalConfigManager {
     /**
      * 隐藏模式 是隐藏名，正常模式 是正常中文名
      */
-    public void persistSystemTableColumn(List<TableColumn> systemTableColumns) {
+    public void persistSystemTableColumn(boolean isHiddenMode, List<TableColumn> systemTableColumns) {
 
-        List<ColumnDefinition> defaultTableColumnInfo = getDefaultTableColumnInfo();
+        List<ColumnDefinition> defaultTableColumnInfo = getDefaultTableColumnInfo(isHiddenMode);
         Map<String, ColumnDefinition> tableColumnInfoMap = defaultTableColumnInfo.stream()
                 .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
 
-        List<ColumnConfig> stockTableColumnConfig = getStockColumnConfig();
+        List<ColumnConfig> stockTableColumnConfig = getStockColumnConfig(isHiddenMode);
         Map<String, ColumnConfig> tableColumnConfigMap = stockTableColumnConfig.stream()
                 .collect(Collectors.toMap(ColumnConfig::getFieldName, Function.identity()));
 
@@ -213,22 +213,22 @@ public class GlobalConfigManager {
 
             orderList.add(columnConfig);
         }
-        persistStockColumnConfig(orderList);
+        persistStockColumnConfig(isHiddenMode, orderList);
     }
 
     /**
      * 按配置文件排序，因为列的顺序可以变更过
      */
-    public List<ColumnDefinition> getStockColumnDefinition() {
+    public List<ColumnDefinition> getStockColumnDefinition(boolean isHiddenMode) {
 
-        Map<String, ColumnDefinition> tableColumnInfoMap = getDefaultTableColumnInfo().stream()
+        Map<String, ColumnDefinition> tableColumnInfoMap = getDefaultTableColumnInfo(isHiddenMode).stream()
                 .collect(Collectors.toMap(ColumnDefinition::getFieldName, Function.identity()));
 
         List<ColumnDefinition> orderList = new ArrayList<>();
 
         // 按配置文件排序，因为列的顺序可能变更过
         int index = 1;
-        List<ColumnConfig> columnConfigs = getStockColumnConfig();
+        List<ColumnConfig> columnConfigs = getStockColumnConfig(isHiddenMode);
         for (ColumnConfig columnConfig : columnConfigs) {
             ColumnDefinition columnDefinition = tableColumnInfoMap.get(columnConfig.getFieldName());
             columnDefinition.setPreferredWidth(columnConfig.getPreferredWidth());
@@ -237,4 +237,25 @@ public class GlobalConfigManager {
         }
         return orderList;
     }
+
+    public ShowMode getShowMode() {
+        if (config == null || config.getShowMode() == null) {
+            persistShowMode(Normal);
+        }
+
+        persistShowMode(Normal);
+        return config.getShowMode();
+    }
+
+    public void persistShowMode(ShowMode showMode) {
+        if (config == null) {
+            config = new GlobalConfig();
+            config.setShowMode(showMode);
+            persist();
+            return;
+        }
+        config.setShowMode(showMode);
+        persist();
+    }
+
 }

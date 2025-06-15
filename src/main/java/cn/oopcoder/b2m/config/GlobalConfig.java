@@ -2,6 +2,7 @@ package cn.oopcoder.b2m.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import cn.oopcoder.b2m.enums.ShowMode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,12 +21,14 @@ public class GlobalConfig {
 
     List<StockConfig> stockConfig;
 
-    public List<ColumnConfig> getStockColumnConfig(boolean isHidden) {
-        return isHidden ? hiddenStockColumnConfig : normalStockColumnConfig;
+    ShowMode showMode;
+
+    public List<ColumnConfig> getStockColumnConfig(boolean isHiddenMode) {
+        return isHiddenMode ? hiddenStockColumnConfig : normalStockColumnConfig;
     }
 
-    public void setStockColumnConfig(boolean isHidden, List<ColumnConfig> tableColumnConfig) {
-        if (isHidden) {
+    public void setStockColumnConfig(boolean isHiddenMode, List<ColumnConfig> tableColumnConfig) {
+        if (isHiddenMode) {
             hiddenStockColumnConfig = tableColumnConfig;
             return;
         }

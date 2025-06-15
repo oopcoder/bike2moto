@@ -52,6 +52,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.oopcoder.b2m.consts.Const.ADD;
+import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
+import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 
 public class StockWindow {
 
@@ -239,18 +241,22 @@ public class StockWindow {
             }
         };
 
-        AnActionButton showModeAction = new AnActionButton(Const.SHOW_MODE_NORMAL, Icons.ICON_CHECKBOX_SELECTED) {
+        selectedHidden = GlobalConfigManager.getInstance().getShowMode() == Hidden;
+
+        AnActionButton showModeAction = new AnActionButton(selectedHidden ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN,
+                selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
+                // 持久化列宽 todo 监听项目退出时持久化
+                GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
+                        tableModel.getSystemTableColumns());
+
                 selectedHidden = !selectedHidden;
                 e.getPresentation().setIcon(selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED);
                 e.getPresentation().setText(selectedHidden ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN);
 
-                // 持久化列宽 todo 监听项目退出时持久化
-                GlobalConfigManager.getInstance().persistSystemTableColumn(tableModel.getSystemTableColumns());
+                GlobalConfigManager.getInstance().persistShowMode(selectedHidden ? Hidden : Normal);
 
-                beautifyTable();
-                GlobalConfigManager.getInstance().setShowMode(selectedHidden ? ShowMode.Hidden : ShowMode.Normal);
                 createModel();
             }
 
@@ -305,8 +311,6 @@ public class StockWindow {
             }
         });
 
-        beautifyTable();
-
         // 列移动监听
         table.getColumnModel().addColumnModelListener(new TableColumnModelAdapter() {
 
@@ -318,7 +322,8 @@ public class StockWindow {
                 System.out.println("columnMoved(): " + e.getFromIndex() + " -> " + e.getToIndex());
 
                 // 移动列，只会更改 TableColumn 的顺序，不会修改我们通过 setColumnIdentifiers 设置的表头
-                GlobalConfigManager.getInstance().persistSystemTableColumn(tableModel.getSystemTableColumns());
+                GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
+                        tableModel.getSystemTableColumns());
             }
         });
 
@@ -354,6 +359,11 @@ public class StockWindow {
         });
 
         enabledActionOnSelectRow();
+
+        // 不显示网格线
+        // table.setShowGrid(!jbCheckBox.isSelected());
+        // 设置表格条纹（斑马线） darcula 主题才有显示，其他主题可能不明显，看不出来
+        // table.setStriped(!jbCheckBox.isSelected());
     }
 
     public void toggleScheduledJob(boolean start) {
@@ -386,13 +396,6 @@ public class StockWindow {
 
     }
 
-    private void beautifyTable() {
-        // 不显示网格线
-        // table.setShowGrid(!jbCheckBox.isSelected());
-        // 设置表格条纹（斑马线） darcula 主题才有显示，其他主题可能不明显，看不出来
-        // table.setStriped(!jbCheckBox.isSelected());
-    }
-
     public void createModel() {
         if (tableModel != null) {
             StockDataManager.getInstance().unregister(tableModel);
@@ -403,7 +406,7 @@ public class StockWindow {
         table.setModel(tableModel);
 
         // 设置表头
-        tableModel.setColumnDefinition(GlobalConfigManager.getInstance().getStockColumnDefinition());
+        tableModel.setColumnDefinition(GlobalConfigManager.getInstance().getStockColumnDefinition(selectedHidden));
 
         // 配置排序器
         tableModel.configRowSorter();
@@ -573,6 +576,10 @@ public class StockWindow {
      * 项目关闭时，资源回收
      */
     public void projectClosing(Project project) {
+
+        GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
+                tableModel.getSystemTableColumns());
+
         StockDataManager.getInstance().unregister(tableModel);
     }
 
