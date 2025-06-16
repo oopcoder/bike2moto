@@ -18,6 +18,8 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.impl.ActionButton;
+import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.JBColor;
@@ -46,6 +48,9 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 import java.awt.*;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -254,6 +259,11 @@ public class StockWindow {
                 GlobalConfigManager.getInstance().persistShowMode(selectedHidden ? Hidden : Normal);
 
                 createModel();
+
+                // InputEvent inputEvent = e.getInputEvent();
+                // ActionButton source = (ActionButton) inputEvent.getSource();
+                // ActionToolbarImpl parent = (ActionToolbarImpl) source.getParent();
+                // System.out.println("actionPerformed(): ");
             }
 
             @Override
@@ -287,6 +297,20 @@ public class StockWindow {
         refreshCheckBox.setIcon(AllIcons.Toolwindows.ToolWindowRun);
         refreshCheckBox.setSelectedIcon(AllIcons.Actions.Pause);
         toolbarDecorator.getActionsPanel().add(refreshCheckBox, BorderLayout.WEST);
+        refreshCheckBox.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // #2B2D30
+                refreshCheckBox.setBackground(JBColor.decode("#3D3F42"));
+                // refreshCheckBox.setOpaque(true);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                refreshCheckBox.setBackground(null);
+                // refreshCheckBox.setOpaque(false);
+            }
+        });
 
         ProjectHolder existProject = ProjectHolder.getFirstProjectHolderExclude(this);
         if (existProject != null) {
