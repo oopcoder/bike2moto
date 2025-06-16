@@ -242,8 +242,6 @@ public class GlobalConfigManager {
         if (config == null || config.getShowMode() == null) {
             persistShowMode(Normal);
         }
-
-        persistShowMode(Normal);
         return config.getShowMode();
     }
 
