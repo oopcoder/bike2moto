@@ -224,9 +224,13 @@ public class GlobalConfigManager {
         List<ColumnConfig> columnConfigs = getStockColumnConfig(isHiddenMode);
         for (ColumnConfig columnConfig : columnConfigs) {
             ColumnDefinition columnDefinition = tableColumnInfoMap.get(columnConfig.getFieldName());
-            columnDefinition.setPreferredWidth(columnConfig.getPreferredWidth());
-            columnDefinition.setOrder(index++);
-            orderList.add(columnDefinition);
+            if (columnDefinition != null) {
+                // 列减少的时候会为null
+                columnDefinition.setPreferredWidth(columnConfig.getPreferredWidth());
+                columnDefinition.setOrder(index++);
+                orderList.add(columnDefinition);
+            }
+        //     todo 新增的列可能不显示
         }
         return orderList;
     }
