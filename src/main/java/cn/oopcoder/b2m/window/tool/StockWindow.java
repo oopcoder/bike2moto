@@ -522,12 +522,12 @@ public class StockWindow {
                 tableColumn.setPreferredWidth(preferredWidth);
             }
 
-            // 定制
-            tableColumn.setCellRenderer(new DefaultTableCellRenderer() {
-                {
-                    // 设置水平对齐方式为居中
-                    setHorizontalAlignment(SwingConstants.CENTER);
-                }
+            // TableCellRenderer cellRenderer = tableColumn.getCellRenderer();
+            // if (cellRenderer == null) {
+            //     cellRenderer = table.getCellRenderer(0, tableColumn.getModelIndex());
+            // }
+
+            tableColumn.setCellRenderer(new DefaultTableCellRenderer.UIResource() {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
@@ -538,7 +538,8 @@ public class StockWindow {
 
                     // 先后顺序还是有点区别，比如选中的时候这里面改了文本的颜色，
                     // 但是下面自定义的前景色把他覆盖了，所以导致选中和未选中的颜色都是一样的
-                    Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, viewRowIndex, viewColumnIndex);
+                    Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus,
+                                                                              viewRowIndex, viewColumnIndex);
                     // System.out.println(" 背景中： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
                     if (!columnDefinition.getDisplayColor().isEmpty()) {
@@ -558,6 +559,8 @@ public class StockWindow {
                         // 聚焦时更改边框和大小，默认颜色 new JBColor(0x589DF6, 0x4A88C7)
                         setBorder(BorderFactory.createLineBorder(JBColor.YELLOW, 3));
                     }
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                    setVerticalAlignment(SwingConstants.CENTER);
                     return component;
                 }
             });
