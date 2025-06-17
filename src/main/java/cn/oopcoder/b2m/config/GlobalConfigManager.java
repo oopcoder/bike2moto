@@ -56,13 +56,6 @@ public class GlobalConfigManager {
 
     private volatile GlobalConfig config;
 
-    // @Setter
-    // private ShowMode showMode = Hidden;
-    //
-    // public boolean isHiddenMode() {
-    //     return showMode == Hidden;
-    // }
-
     public void refresh() {
         String configJson = propertiesComponent.getValue(GLOBAL_CONFIG_KEY);
         System.out.println("加载配置成功：【" + configJson + " 】");

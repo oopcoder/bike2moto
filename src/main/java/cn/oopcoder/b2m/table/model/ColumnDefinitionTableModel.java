@@ -125,9 +125,7 @@ public class ColumnDefinitionTableModel extends DefaultTableModel {
         return isCellEditable && fieldInfo.isEditable();
     }
 
-
     public void enableCellEdit(boolean isCellEditable) {
         this.isCellEditable = isCellEditable;
     }
-
 }

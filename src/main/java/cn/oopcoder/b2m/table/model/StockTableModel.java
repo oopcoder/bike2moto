@@ -70,13 +70,12 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
                 stockDataBean.copyFrom(stockData);
             }
         });
-        refreshTable();
+        updateTableModelData();
 
         stockWindow.refreshUI();
     }
 
-    public void refreshTable() {
-
+    public void updateTableModelData() {
         // 清空表格模型
         setRowCount(0);
 
@@ -84,17 +83,18 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         // 这里列的顺序可能变更过，恢复表头排序来取值
         columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
 
-        List<ColumnDefinition> fieldInfoList = columnList.stream()
+        List<ColumnDefinition> columnDefinitionList = columnList.stream()
                 .map(tableColumn -> displayNameMap.get((String) tableColumn.getHeaderValue()))
                 .collect(Collectors.toList());
 
         List<StockDataBean> stockDataBeans = getDefaultOrderStockDataBeanList();
 
         stockDataBeans.forEach(stockDataBean -> {
-            Vector<Object> vector = new Vector<>(fieldInfoList.size());
 
-            for (ColumnDefinition fieldInfo : fieldInfoList) {
-                String fieldName = fieldInfo.getFieldName();
+            Vector<Object> vector = new Vector<>(columnDefinitionList.size());
+            for (ColumnDefinition columnDefinition : columnDefinitionList) {
+
+                String fieldName = columnDefinition.getFieldName();
                 Object fieldValue = stockDataBean.getFieldValue(fieldName);
 
                 if (ObjectUtils.isNotEmpty(fieldValue)) {
@@ -107,6 +107,8 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
                             fieldValue = "+" + fieldValue;
                         }
                     }
+                } else {
+                    fieldValue = "--";
                 }
                 vector.addElement(fieldValue);
             }
@@ -161,8 +163,10 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         stockDataBean.setCode(code);
         stockDataBean.setIndex(Integer.MAX_VALUE);
         stockDataBeanMap.put(code, stockDataBean);
+
         persistStockDataBean();
 
+        // 请求网络数据
         StockDataManager.getInstance().refresh();
         return getModelRowIndex(stockDataBean.getCode());
 
@@ -341,16 +345,17 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
     }
 
     private void persistStockDataBean() {
+
         List<StockDataBean> stockDataBeans = getDefaultOrderStockDataBeanList();
         GlobalConfigManager.getInstance().persistStockDataBean(stockDataBeans);
 
         // 修改过数据，刷新一下当前页面
-        refreshTable();
+        updateTableModelData();
 
         // 更新其他窗口的model
         List<ProjectHolder> projectHolders = ProjectHolder.getProjectHolderExclude(stockWindow);
         for (ProjectHolder projectHolder : projectHolders) {
-            System.out.println("项目即将更新: " + projectHolder.getProject().getName());
+            System.out.println(projectHolder.getProject().getName() + " 项目即将更新");
             projectHolder.getStockWindow().createModel();
         }
     }

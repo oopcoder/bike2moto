@@ -42,13 +42,13 @@ public class StockDataBean {
     public static final String CHANGE_FIELD_NAME = "change";
 
     // 调试用，不需要时直接注释
-    // @TableColumn(name = "行号", order = 4)
+    // @Column(name = "行号", order = 4)
     private int index;
 
     @Column(name = "名称", order = 6, showMode = {Normal})
     private String name;
 
-    @Column(name = "编码", order = 8)
+    @Column(name = "代码", order = 8)
     private String code;
 
     // 隐蔽模式名，最好是英文
@@ -79,7 +79,7 @@ public class StockDataBean {
     private String time;
 
     // 固定在顶部
-    // @TableColumn(name = "固定", order = 45)
+    // @Column(name = "固定", order = 45)
     private boolean pinTop = false;
 
 
