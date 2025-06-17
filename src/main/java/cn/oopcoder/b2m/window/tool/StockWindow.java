@@ -4,7 +4,6 @@ import cn.oopcoder.b2m.bean.ColumnDefinition;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.dataSource.StockDataManager;
-import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.factory.ProjectHolder;
 import cn.oopcoder.b2m.table.model.StockTableModel;
 
@@ -18,8 +17,6 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.impl.ActionButton;
-import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.JBColor;
@@ -33,22 +30,20 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableColumnModelEvent;
-import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.plaf.basic.BasicCheckBoxUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 import java.awt.*;
-import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Date;
@@ -77,7 +72,6 @@ public class StockWindow {
     private AnActionButton moveTopAction;
     private AnActionButton moveBottomAction;
     private AnActionButton pinTopAction;
-    // private AnActionButton continueRefreshTableAction;
     private ToolbarDecorator toolbarDecorator;
     private JPanel tablePanel;
 
@@ -248,7 +242,7 @@ public class StockWindow {
         selectedHidden = GlobalConfigManager.getInstance().getShowMode() == Hidden;
 
         AnActionButton showModeAction = new AnActionButton(selectedHidden ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN,
-                selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
+                                                           selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
 
@@ -345,7 +339,7 @@ public class StockWindow {
 
                 // 移动列，只会更改 TableColumn 的顺序，不会修改我们通过 setColumnIdentifiers 设置的表头
                 GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                        tableModel.getSystemTableColumns());
+                                                                           tableModel.getSystemTableColumns());
             }
 
             // 列宽度改变
@@ -354,31 +348,16 @@ public class StockWindow {
                 TableColumnModel model = table.getColumnModel();
                 for (int i = 0; i < model.getColumnCount(); i++) {
                     System.out.printf("Column %d (%s) width: %d%n",
-                            i, model.getColumn(i).getHeaderValue(), model.getColumn(i).getWidth());
+                                      i, model.getColumn(i).getHeaderValue(), model.getColumn(i).getWidth());
                 }
 
                 GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                        tableModel.getSystemTableColumns());
+                                                                           tableModel.getSystemTableColumns());
             }
         });
 
         JTableHeader tableHeader = table.getTableHeader();
         tableHeader.addMouseListener(new ToggleRowSortMouseListener());
-
-        // 添加编辑器监听
-        table.getDefaultEditor(Object.class)
-                .addCellEditorListener(new CellEditorListener() {
-                    @Override
-                    public void editingStopped(ChangeEvent e) {
-                        // 可以在这里获取编辑后的值
-                        System.out.println("单元格 编辑器监听");
-                    }
-
-                    @Override
-                    public void editingCanceled(ChangeEvent e) {
-                        // 编辑取消处理
-                    }
-                });
 
         // 获取行选择模型
         ListSelectionModel selectionModel = table.getSelectionModel();
@@ -488,42 +467,49 @@ public class StockWindow {
 
     public void configRenderer() {
 
-        // todo 会导致默认的排序箭头不见了，暂时移除
+        // 设置表头渲染器 保持默认的排序图标行为
+        TableCellRenderer defaultRenderer = table.getTableHeader().getDefaultRenderer();
+        table.getTableHeader().setDefaultRenderer(new TableCellRenderer() {
 
-        // 设置表头渲染器
-        // table.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
-        //     {
-        //         setHorizontalAlignment(SwingConstants.CENTER);
-        //         setVerticalAlignment(SwingConstants.CENTER);
-        //         setFont(getFont().deriveFont(Font.BOLD));
-        //     }
-        // });
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component delegate = defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (delegate instanceof JLabel) {
+                    JLabel cmp = (JLabel) delegate;
+                    cmp.setHorizontalAlignment(SwingConstants.CENTER);
+                    cmp.setVerticalAlignment(SwingConstants.CENTER);
+                    cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
+                    return cmp;
+                } else {
+                    return delegate;
+                }
+            }
+        });
 
         // 优先使用每列定制的渲染器，没定制则用默认的渲染器
         // 也可以覆盖默认的渲染器， 看JTable.createDefaultRenderers()方法，是根据类型来选择用哪个渲染器
-        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-        });
+        // table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+        // });
 
         // 添加编辑器监听
-        table.getDefaultEditor(Object.class)
-                .addCellEditorListener(new CellEditorListener() {
-                    @Override
-                    public void editingStopped(ChangeEvent e) {
-                        // 可以在这里获取编辑后的值
-                        System.out.println("单元格 编辑器监听");
-                    }
-
-                    @Override
-                    public void editingCanceled(ChangeEvent e) {
-                        // 编辑取消处理
-                    }
-                });
-
-        // boolean selected = showModeCheckBox.isSelected();
+        // table.getDefaultEditor(Object.class)
+        //      .addCellEditorListener(new CellEditorListener() {
+        //          @Override
+        //          public void editingStopped(ChangeEvent e) {
+        //              // 可以在这里获取编辑后的值
+        //              System.out.println("单元格 编辑器监听");
+        //          }
+        //
+        //          @Override
+        //          public void editingCanceled(ChangeEvent e) {
+        //              // 编辑取消处理
+        //          }
+        //      });
 
         List<ColumnDefinition> columnDefinitions = tableModel.getColumnDefinitions();
         Map<String, ColumnDefinition> tableColumnInfoMap = columnDefinitions.stream()
-                .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
+                                                                            .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
 
         List<TableColumn> systemTableColumns = tableModel.getSystemTableColumns();
         for (TableColumn tableColumn : systemTableColumns) {
@@ -545,7 +531,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -605,7 +591,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-                                  int viewRowIndex, int viewColumnIndex) {
+            int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");

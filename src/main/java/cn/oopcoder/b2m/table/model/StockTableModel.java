@@ -39,6 +39,8 @@ import static cn.oopcoder.b2m.config.GlobalConfigManager.MOVE_FACTOR;
  * 立马刷新ui
  * fireTableRowsUpdated(modelRowIndex, modelRowIndex);
  * fireTableDataChanged();
+ *
+ * com.intellij.ui.TableUtil 里面有些方法可学习
  */
 
 public class StockTableModel extends ColumnDefinitionTableModel implements StockDataListener {
