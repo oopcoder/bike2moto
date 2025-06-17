@@ -91,7 +91,7 @@ public class StockWindow {
 
         // 设置为单选模式 用户只能选中一行
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        // 禁用所有自动调整列宽的行为
+        // 禁用所有自动调整列宽的行为，不禁用，下面没有滚动条，列宽随着窗口大小变化自动压缩变化
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
         addAction = new AnActionButton(ADD, Icons.ICON_ADD) {
@@ -248,7 +248,7 @@ public class StockWindow {
         selectedHidden = GlobalConfigManager.getInstance().getShowMode() == Hidden;
 
         AnActionButton showModeAction = new AnActionButton(selectedHidden ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN,
-                                                           selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
+                selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
 
@@ -322,6 +322,7 @@ public class StockWindow {
 
             source.setToolTipText(source.isSelected() ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
             toggleScheduledJob(source.isSelected());
+            tableModel.enableCellEdit(!source.isSelected());
 
             // 更新其他窗口的图标
             List<ProjectHolder> projectHolders = ProjectHolder.getProjectHolderExclude(this);
@@ -344,7 +345,7 @@ public class StockWindow {
 
                 // 移动列，只会更改 TableColumn 的顺序，不会修改我们通过 setColumnIdentifiers 设置的表头
                 GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                                                                           tableModel.getSystemTableColumns());
+                        tableModel.getSystemTableColumns());
             }
 
             // 列宽度改变
@@ -353,11 +354,11 @@ public class StockWindow {
                 TableColumnModel model = table.getColumnModel();
                 for (int i = 0; i < model.getColumnCount(); i++) {
                     System.out.printf("Column %d (%s) width: %d%n",
-                                      i, model.getColumn(i).getHeaderValue(), model.getColumn(i).getWidth());
+                            i, model.getColumn(i).getHeaderValue(), model.getColumn(i).getWidth());
                 }
 
                 GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                                                                           tableModel.getSystemTableColumns());
+                        tableModel.getSystemTableColumns());
             }
         });
 
@@ -366,18 +367,18 @@ public class StockWindow {
 
         // 添加编辑器监听
         table.getDefaultEditor(Object.class)
-             .addCellEditorListener(new CellEditorListener() {
-                 @Override
-                 public void editingStopped(ChangeEvent e) {
-                     // 可以在这里获取编辑后的值
-                     System.out.println("单元格 编辑器监听");
-                 }
+                .addCellEditorListener(new CellEditorListener() {
+                    @Override
+                    public void editingStopped(ChangeEvent e) {
+                        // 可以在这里获取编辑后的值
+                        System.out.println("单元格 编辑器监听");
+                    }
 
-                 @Override
-                 public void editingCanceled(ChangeEvent e) {
-                     // 编辑取消处理
-                 }
-             });
+                    @Override
+                    public void editingCanceled(ChangeEvent e) {
+                        // 编辑取消处理
+                    }
+                });
 
         // 获取行选择模型
         ListSelectionModel selectionModel = table.getSelectionModel();
@@ -434,6 +435,7 @@ public class StockWindow {
             StockDataManager.getInstance().unregister(tableModel);
         }
         tableModel = new StockTableModel(this, table);
+        tableModel.enableCellEdit(!refreshCheckBox.isSelected());
         StockDataManager.getInstance().register(tableModel);
 
         table.setModel(tableModel);
@@ -497,15 +499,31 @@ public class StockWindow {
         //     }
         // });
 
-        // 可以设置默认的渲染器，优先使用每列定制的渲染器
-        // table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-        // });
+        // 优先使用每列定制的渲染器，没定制则用默认的渲染器
+        // 也可以覆盖默认的渲染器， 看JTable.createDefaultRenderers()方法，是根据类型来选择用哪个渲染器
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+        });
+
+        // 添加编辑器监听
+        table.getDefaultEditor(Object.class)
+                .addCellEditorListener(new CellEditorListener() {
+                    @Override
+                    public void editingStopped(ChangeEvent e) {
+                        // 可以在这里获取编辑后的值
+                        System.out.println("单元格 编辑器监听");
+                    }
+
+                    @Override
+                    public void editingCanceled(ChangeEvent e) {
+                        // 编辑取消处理
+                    }
+                });
 
         // boolean selected = showModeCheckBox.isSelected();
 
         List<ColumnDefinition> columnDefinitions = tableModel.getColumnDefinitions();
         Map<String, ColumnDefinition> tableColumnInfoMap = columnDefinitions.stream()
-                                                                            .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
+                .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
 
         List<TableColumn> systemTableColumns = tableModel.getSystemTableColumns();
         for (TableColumn tableColumn : systemTableColumns) {
@@ -527,7 +545,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -587,7 +605,7 @@ public class StockWindow {
     }
 
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-            int viewRowIndex, int viewColumnIndex) {
+                                  int viewRowIndex, int viewColumnIndex) {
         if (isSelected) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");
@@ -618,5 +636,6 @@ public class StockWindow {
         // 代码设置的，监听器不会回调
         refreshCheckBox.setSelected(selected);
         refreshCheckBox.setToolTipText(selected ? Const.STOP_REFRESH_TABLE : Const.CONTINUE_REFRESH_TABLE);
+        tableModel.enableCellEdit(!selected);
     }
 }

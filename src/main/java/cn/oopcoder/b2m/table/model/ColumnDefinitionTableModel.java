@@ -36,6 +36,7 @@ public class ColumnDefinitionTableModel extends DefaultTableModel {
     protected List<String> displayNameList;
     protected Map<String, ColumnDefinition> fieldNameMap;
     protected List<String> fieldNameList;
+    private volatile boolean isCellEditable = true;
 
     public ColumnDefinitionTableModel(JBTable table) {
         this.table = table;
@@ -74,10 +75,14 @@ public class ColumnDefinitionTableModel extends DefaultTableModel {
         return fieldNameList.indexOf(fieldName);
     }
 
+
+    /**
+     * 根据字段名和行索引获取字段值
+     */
     public Object getColumnValue(int modelRowIndex, String fieldName) {
-        int codeIndex = getColumnIndex(fieldName);
+        int columnIndex = getColumnIndex(fieldName);
         Vector rowVector = dataVector.elementAt(modelRowIndex);
-        return rowVector.elementAt(codeIndex);
+        return rowVector.elementAt(columnIndex);
     }
 
     public List<TableColumn> getSystemTableColumns() {
@@ -117,6 +122,12 @@ public class ColumnDefinitionTableModel extends DefaultTableModel {
     @Override
     public boolean isCellEditable(int row, int column) {
         ColumnDefinition fieldInfo = columnDefinitions.get(column);
-        return fieldInfo.isEditable();
+        return isCellEditable && fieldInfo.isEditable();
     }
+
+
+    public void enableCellEdit(boolean isCellEditable) {
+        this.isCellEditable = isCellEditable;
+    }
+
 }
