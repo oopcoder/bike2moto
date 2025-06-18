@@ -19,8 +19,7 @@ import java.util.Set;
 public class StockDataUtil {
 
     public static Map<String, StockData> updateStockData(Set<String> elements) {
-        Map<String, StockData> stockDataBeanMap = new HashMap<>();
-        // Set<String> elements = stockDataBeanMap.keySet();
+        Map<String, StockData> dataMap = new HashMap<>();
         String codes = String.join(",", elements);
         try {
             String result = getStockData(codes);
@@ -31,32 +30,42 @@ public class StockDataUtil {
                 String dataStr = line.substring(line.indexOf("=") + 2, line.length() - 2);
                 String[] values = dataStr.split("~");
 
-                StockData stockDataBean = new StockData();
-                stockDataBean.setCode(code);
+                StockData stockData = new StockData();
+                stockData.setCode(code);
+                stockData.setName(values[1]);
+                stockData.setCurrentPrice(values[3]);
+                stockData.setPreClose(values[4]);
+                stockData.setOpen(values[5]);
+                stockData.setTime(parseTime(values[30]));
+                stockData.setChange(values[31]);
+                stockData.setChangePercent(values[32]);
+                stockData.setHigh(values[33]);// 33
+                stockData.setLow(values[34]);// 34
+                stockData.setRangePercent(values[43]);
 
-                stockDataBean.setName(values[1]);
-                stockDataBean.setChange(values[31]);
-                stockDataBean.setChangePercent(values[32]);
-                try {
-                    Date date = new SimpleDateFormat("yyyyMMddHHmmss").parse(values[30]);
-                    stockDataBean.setTime(DateFormatUtils.format(date, "HH:mm:ss"));
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    stockDataBean.setTime(values[30]);
-                }
-
-                stockDataBean.setCurrentPrice(values[3]);
-                stockDataBean.setHigh(values[33]);// 33
-                stockDataBean.setLow(values[34]);// 34
-
-                stockDataBeanMap.put(code, stockDataBean);
+                dataMap.put(code, stockData);
                 // System.out.println("parse(): " + stockDataBean);
-
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return stockDataBeanMap;
+        return dataMap;
+    }
+
+    private static String parseTime(String timeString) {
+        try {
+            Date date = new SimpleDateFormat("yyyyMMddHHmmss").parse(timeString);
+            return DateFormatUtils.format(date, "HH:mm:ss");
+        } catch (ParseException e) {
+            try {
+                Date date = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").parse(timeString);
+                return DateFormatUtils.format(date, "HH:mm:ss");
+            } catch (ParseException exception) {
+                exception.printStackTrace();
+            }
+        }
+
+        return timeString;
     }
 
 
