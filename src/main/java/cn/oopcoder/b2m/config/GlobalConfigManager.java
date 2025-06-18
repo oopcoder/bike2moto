@@ -202,7 +202,14 @@ public class GlobalConfigManager {
             ColumnDefinition columnDefinition = tableColumnInfoMap.get(displayName);
 
             ColumnConfig columnConfig = tableColumnConfigMap.get(columnDefinition.getFieldName());
-            columnConfig.setPreferredWidth(tableColumn.getPreferredWidth());
+            if (columnConfig != null) {
+                columnConfig.setPreferredWidth(tableColumn.getPreferredWidth());
+            } else {
+                // 新增的列还没配置
+                columnConfig = new ColumnConfig();
+                columnConfig.setFieldName(columnDefinition.getFieldName());
+                columnConfig.setPreferredWidth(columnDefinition.getPreferredWidth());
+            }
 
             orderList.add(columnConfig);
         }
@@ -223,14 +230,20 @@ public class GlobalConfigManager {
         int index = 1;
         List<ColumnConfig> columnConfigs = getStockColumnConfig(isHiddenMode);
         for (ColumnConfig columnConfig : columnConfigs) {
-            ColumnDefinition columnDefinition = tableColumnInfoMap.get(columnConfig.getFieldName());
+            ColumnDefinition columnDefinition = tableColumnInfoMap.remove(columnConfig.getFieldName());
             if (columnDefinition != null) {
                 // 列减少的时候会为null
                 columnDefinition.setPreferredWidth(columnConfig.getPreferredWidth());
                 columnDefinition.setOrder(index++);
                 orderList.add(columnDefinition);
             }
-        //     todo 新增的列可能不显示
+        }
+
+        // 列新增的时候
+        for (Map.Entry<String, ColumnDefinition> entry : tableColumnInfoMap.entrySet()) {
+            ColumnDefinition columnDefinition = entry.getValue();
+            columnDefinition.setOrder(index++);
+            orderList.add(columnDefinition);
         }
         return orderList;
     }
