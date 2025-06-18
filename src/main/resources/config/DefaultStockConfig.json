@@ -45,5 +45,15 @@
     "code": "sh562500",
     "alias": "器",
     "maskName": "jqr"
+  },
+  {
+    "code": "usBABA",
+    "alias": "阿",
+    "maskName": "ali"
+  },
+  {
+    "code": "hk01810",
+    "alias": "米",
+    "maskName": "xm"
   }
 ]

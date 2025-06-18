@@ -5,6 +5,7 @@ import cn.oopcoder.b2m.dataSource.StockData;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 
+import cn.oopcoder.b2m.utils.NumUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.intellij.ui.JBColor;
 
@@ -40,6 +41,7 @@ public class StockDataBean {
     public static final String STOCK_CODE_FIELD_NAME = "code";
     public static final String CHANGE_PERCENT_FIELD_NAME = "changePercent";
     public static final String CHANGE_FIELD_NAME = "change";
+    public static final String RANGE_PERCENT_FIELD_NAME = "rangePercent";
 
     // 调试用，不需要时直接注释
     // @Column(name = "行号", order = 4)
@@ -75,7 +77,22 @@ public class StockDataBean {
     @Column(name = "最低价", order = 40, enableNumberComparator = true)
     private String low;
 
-    @Column(name = "时间", order = 60, showMode = {Normal})
+    @Column(name = "开盘价", order = 45, enableNumberComparator = true, showMode = {Normal})
+    private String open;
+
+    // 昨日收盘价, 今天收盘价 就是现价
+    @Column(name = "昨收价", order = 50, enableNumberComparator = true, showMode = {Normal})
+    private String preClose;
+
+    // 价格差 = 最高 - 最低
+    @Column(name = "价格差", order = 55, enableNumberComparator = true)
+    private String range;
+
+    // 振幅百分比
+    @Column(name = "振幅", order = 60, enableNumberComparator = true)
+    private String rangePercent;
+
+    @Column(name = "时间", order = 65, showMode = {Normal})
     private String time;
 
     // 固定在顶部
@@ -113,7 +130,7 @@ public class StockDataBean {
                         }
                     }
                     return new ColumnDefinition(field.getName(), displayName, displayColor, tc.order(),
-                            tc.enableNumberComparator(), tc.editable(), isHidden ? 60 : 100);
+                            tc.enableNumberComparator(), tc.editable(), isHidden ? 60 : 70);
                 })
                 .sorted(Comparator.comparingInt(ColumnDefinition::getOrder))
                 .collect(Collectors.toList());
@@ -152,6 +169,11 @@ public class StockDataBean {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void calculate() {
+        double d = NumUtil.toDouble(high) - NumUtil.toDouble(low);
+        range = NumUtil.formatDecimal(d, 2, 3);
     }
 
 

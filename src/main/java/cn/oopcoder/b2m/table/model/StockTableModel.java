@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_PERCENT_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.RANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 import static cn.oopcoder.b2m.config.GlobalConfigManager.MOVE_FACTOR;
 
@@ -70,6 +71,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
             StockDataBean stockDataBean = stockDataBeanMap.get(code);
             if (stockDataBean != null) {
                 stockDataBean.copyFrom(stockData);
+                stockDataBean.calculate();
             }
         });
         updateTableModelData();
@@ -87,37 +89,23 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         // 清空表格模型
         setRowCount(0);
 
-        List<TableColumn> columnList = getSystemTableColumns();
-        // 这里列的顺序可能变更过，恢复表头排序来取值
-        columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
-
-        List<ColumnDefinition> columnDefinitionList = columnList.stream()
-                .map(tableColumn -> displayNameMap.get((String) tableColumn.getHeaderValue()))
-                .collect(Collectors.toList());
+        // List<TableColumn> columnList = getSystemTableColumns();
+        // // 这里列的顺序可能变更过，恢复表头排序来取值
+        // columnList.sort(Comparator.comparingInt(TableColumn::getModelIndex));
+        //
+        // List<ColumnDefinition> columnDefinitionList = columnList.stream()
+        //         .map(tableColumn -> displayNameMap.get((String) tableColumn.getHeaderValue()))
+        //         .collect(Collectors.toList());
 
         List<StockDataBean> stockDataBeans = getDefaultOrderStockDataBeanList();
 
         stockDataBeans.forEach(stockDataBean -> {
 
-            Vector<Object> vector = new Vector<>(columnDefinitionList.size());
-            for (ColumnDefinition columnDefinition : columnDefinitionList) {
-
+            Vector<Object> vector = new Vector<>(columnDefinitions.size());
+            for (ColumnDefinition columnDefinition : columnDefinitions) {
                 String fieldName = columnDefinition.getFieldName();
                 Object fieldValue = stockDataBean.getFieldValue(fieldName);
-
-                if (ObjectUtils.isNotEmpty(fieldValue)) {
-                    // 涨幅
-                    if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
-                        fieldValue = fieldValue + "%";
-                    }
-                    if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName) || CHANGE_FIELD_NAME.equals(fieldName)) {
-                        if (!fieldValue.toString().startsWith("-")) {
-                            fieldValue = "+" + fieldValue;
-                        }
-                    }
-                } else {
-                    fieldValue = "--";
-                }
+                fieldValue = transformValue(fieldValue, fieldName);
                 vector.addElement(fieldValue);
             }
             addRow(vector);
@@ -128,6 +116,28 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         if (modelRowIndex != null) {
             stockWindow.selectRow(modelRowIndex);
         }
+    }
+
+    private static @NotNull Object transformValue(Object fieldValue, String fieldName) {
+        if (ObjectUtils.isEmpty(fieldValue)) {
+            return "--";
+        }
+
+        // 涨幅
+        if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
+            fieldValue = fieldValue + "%";
+        }
+        if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName) || CHANGE_FIELD_NAME.equals(fieldName)) {
+            if (!fieldValue.toString().startsWith("-")) {
+                fieldValue = "+" + fieldValue;
+            }
+        }
+
+        // 振幅
+        if (RANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
+            fieldValue = fieldValue + "%";
+        }
+        return fieldValue;
     }
 
     @Override

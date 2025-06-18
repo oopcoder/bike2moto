@@ -18,7 +18,7 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
     // 列顺序
     int order() default Integer.MAX_VALUE;
 
-    // 显示模式
+    // 显示模式，默认隐藏模式和正常模式都显示
     ShowMode[] showMode() default {Hidden, Normal};
 
     // 列显示名称
