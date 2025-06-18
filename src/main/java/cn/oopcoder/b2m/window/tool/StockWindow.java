@@ -402,7 +402,7 @@ public class StockWindow {
         pinTopAction.setEnabled(isSelect);
     }
 
-    private void selectRow(int modelRowIndex) {
+    public void selectRow(int modelRowIndex) {
         if (modelRowIndex >= 0) {
             int viewRowIndex = table.convertRowIndexToView(modelRowIndex);
             table.setRowSelectionInterval(viewRowIndex, viewRowIndex); // 选中单行

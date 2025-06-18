@@ -39,7 +39,7 @@ import static cn.oopcoder.b2m.config.GlobalConfigManager.MOVE_FACTOR;
  * 立马刷新ui
  * fireTableRowsUpdated(modelRowIndex, modelRowIndex);
  * fireTableDataChanged();
- *
+ * <p>
  * com.intellij.ui.TableUtil 里面有些方法可学习
  */
 
@@ -78,6 +78,12 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
     }
 
     public void updateTableModelData() {
+        // 记录选择的行
+        Integer modelRowIndex = null;
+        if (table.getSelectedRow() >= 0) {
+            modelRowIndex = table.convertRowIndexToModel(table.getSelectedRow());
+        }
+
         // 清空表格模型
         setRowCount(0);
 
@@ -117,6 +123,11 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
             addRow(vector);
         });
         fireTableRowsUpdated(0, table.getModel().getRowCount() - 1);
+
+        // 恢复选择的行
+        if (modelRowIndex != null) {
+            stockWindow.selectRow(modelRowIndex);
+        }
     }
 
     @Override
