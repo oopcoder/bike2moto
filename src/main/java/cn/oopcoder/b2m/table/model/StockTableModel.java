@@ -30,6 +30,8 @@ import org.jetbrains.annotations.NotNull;
 
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_PERCENT_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.HIGH_PERCENT_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.LOW_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.RANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 import static cn.oopcoder.b2m.config.GlobalConfigManager.MOVE_FACTOR;
@@ -135,6 +137,16 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
 
         // 振幅
         if (RANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
+            fieldValue = fieldValue + "%";
+        }
+
+        // 最小涨跌幅
+        if (LOW_PERCENT_FIELD_NAME.equals(fieldName)) {
+            fieldValue = fieldValue + "%";
+        }
+
+        // 最大涨跌幅
+        if (HIGH_PERCENT_FIELD_NAME.equals(fieldName)) {
             fieldValue = fieldValue + "%";
         }
         return fieldValue;

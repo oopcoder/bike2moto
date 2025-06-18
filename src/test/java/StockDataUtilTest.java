@@ -35,4 +35,18 @@ public class StockDataUtilTest {
             System.out.println(JacksonUtil.toJson(stockData));
         }
     }
+
+
+    @Test
+    public void testCalculate() {
+        Map<String, StockData> dataMap = StockDataUtil.updateStockData(new HashSet<>(list));
+
+        for (StockData stockData : dataMap.values()) {
+            StockDataBean stockDataBean = new StockDataBean();
+            stockDataBean.copyFrom(stockData);
+            stockDataBean.calculate();
+
+            System.out.println(JacksonUtil.toJson(stockDataBean));
+        }
+    }
 }
