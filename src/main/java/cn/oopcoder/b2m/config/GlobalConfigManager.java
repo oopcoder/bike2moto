@@ -113,7 +113,7 @@ public class GlobalConfigManager {
 
         // 按顺序 持久化
         List<StockConfig> list = stockDataBeans.stream()
-                .map(t -> new StockConfig(t.getCode(), t.getMaskName(), t.getAlias(), t.isPinTop()))
+                .map(t -> new StockConfig(t.getSymbol(), t.getMaskName(), t.getAlias(), t.isPinTop()))
                 .collect(Collectors.toList());
 
         persistStockConfig(list);

@@ -14,7 +14,7 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class StockConfig {
 
-    private String code;
+    private String symbol;
 
     private String maskName;
 
@@ -28,11 +28,11 @@ public class StockConfig {
         if (o == null || getClass() != o.getClass())
             return false;
         StockConfig that = (StockConfig) o;
-        return Objects.equals(code, that.code);
+        return Objects.equals(symbol, that.symbol);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(code);
+        return Objects.hashCode(symbol);
     }
 }

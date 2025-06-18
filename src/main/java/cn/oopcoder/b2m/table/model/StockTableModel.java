@@ -32,6 +32,9 @@ import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.CHANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.HIGH_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.LOW_PERCENT_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Min1_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Min3_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Min5_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.RANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 import static cn.oopcoder.b2m.config.GlobalConfigManager.MOVE_FACTOR;
@@ -59,7 +62,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
 
     public void configStockDataBean(List<StockDataBean> stockDataBeanList) {
         this.stockDataBeanMap = stockDataBeanList.stream().
-                collect(Collectors.toMap(StockDataBean::getCode, Function.identity()));
+                                                 collect(Collectors.toMap(StockDataBean::getSymbol, Function.identity()));
     }
 
     @Override
@@ -120,34 +123,39 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         }
     }
 
-    private static @NotNull Object transformValue(Object fieldValue, String fieldName) {
+    List<String> addPercentField = List.of(
+            CHANGE_PERCENT_FIELD_NAME,
+            RANGE_PERCENT_FIELD_NAME,
+            LOW_PERCENT_FIELD_NAME,
+            HIGH_PERCENT_FIELD_NAME,
+            Min1_FIELD_NAME,
+            Min3_FIELD_NAME,
+            Min5_FIELD_NAME
+    );
+
+    List<String> addAddField = List.of(
+            CHANGE_PERCENT_FIELD_NAME,
+            CHANGE_FIELD_NAME,
+            LOW_PERCENT_FIELD_NAME,
+            HIGH_PERCENT_FIELD_NAME,
+            Min1_FIELD_NAME,
+            Min3_FIELD_NAME,
+            Min5_FIELD_NAME
+    );
+
+    private @NotNull Object transformValue(Object fieldValue, String fieldName) {
         if (ObjectUtils.isEmpty(fieldValue)) {
             return "--";
         }
 
-        // 涨幅
-        if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
+        if (addPercentField.contains(fieldName)) {
             fieldValue = fieldValue + "%";
         }
-        if (CHANGE_PERCENT_FIELD_NAME.equals(fieldName) || CHANGE_FIELD_NAME.equals(fieldName)) {
+
+        if (addAddField.contains(fieldName)) {
             if (!fieldValue.toString().startsWith("-")) {
                 fieldValue = "+" + fieldValue;
             }
-        }
-
-        // 振幅
-        if (RANGE_PERCENT_FIELD_NAME.equals(fieldName)) {
-            fieldValue = fieldValue + "%";
-        }
-
-        // 最小涨跌幅
-        if (LOW_PERCENT_FIELD_NAME.equals(fieldName)) {
-            fieldValue = fieldValue + "%";
-        }
-
-        // 最大涨跌幅
-        if (HIGH_PERCENT_FIELD_NAME.equals(fieldName)) {
-            fieldValue = fieldValue + "%";
         }
         return fieldValue;
     }
@@ -179,7 +187,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
      */
     public int getModelRowIndex(String code) {
         List<StockDataBean> stockDataBeans = getDefaultOrderStockDataBeanList();
-        return stockDataBeans.stream().map(StockDataBean::getCode).collect(Collectors.toList()).indexOf(code);
+        return stockDataBeans.stream().map(StockDataBean::getSymbol).collect(Collectors.toList()).indexOf(code);
     }
 
     /**
@@ -187,7 +195,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
      */
     public int addStock(String code) {
         boolean codeExists = stockDataBeanMap.keySet().stream()
-                .anyMatch(key -> key.equalsIgnoreCase(code));
+                                             .anyMatch(key -> key.equalsIgnoreCase(code));
         if (codeExists) {
             throw new RuntimeException("编码已经存在，请勿重复输入");
         }
@@ -195,7 +203,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
             throw new RuntimeException("编码不正确，请确认后再输入");
         }
         StockDataBean stockDataBean = new StockDataBean();
-        stockDataBean.setCode(code);
+        stockDataBean.setSymbol(code);
         stockDataBean.setIndex(Integer.MAX_VALUE);
         stockDataBeanMap.put(code, stockDataBean);
 
@@ -203,8 +211,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
 
         // 请求网络数据
         StockDataManager.getInstance().refresh();
-        return getModelRowIndex(stockDataBean.getCode());
-
+        return getModelRowIndex(stockDataBean.getSymbol());
     }
 
     /**
@@ -228,11 +235,11 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
      */
     private @NotNull List<StockDataBean> getDefaultOrderStockDataBeanList() {
         return stockDataBeanMap.values().stream()
-                .sorted(Comparator.comparing(StockDataBean::isPinTop)
-                        .reversed()
-                        .thenComparing(StockDataBean::getIndex)
-                        .thenComparing(StockDataBean::getCode))
-                .collect(Collectors.toList());
+                               .sorted(Comparator.comparing(StockDataBean::isPinTop)
+                                                 .reversed()
+                                                 .thenComparing(StockDataBean::getIndex)
+                                                 .thenComparing(StockDataBean::getSymbol))
+                               .collect(Collectors.toList());
     }
 
     /**
@@ -245,15 +252,15 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
 
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
         Optional<StockDataBean> optional = stockDataBeanMap.values().stream()
-                .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
-                .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
-                .filter(s -> !s.getCode().equals(stockDataBean.getCode()));
+                                                           .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
+                                                           .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getSymbol))
+                                                           .filter(s -> !s.getSymbol().equals(stockDataBean.getSymbol()));
 
         if (optional.isPresent()) {
             StockDataBean top = optional.get();
             stockDataBean.setIndex(top.getIndex() - MOVE_FACTOR);
             persistStockDataBean();
-            return getModelRowIndex(stockDataBean.getCode());
+            return getModelRowIndex(stockDataBean.getSymbol());
         }
         return -1;
     }
@@ -268,15 +275,15 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
 
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
         Optional<StockDataBean> optional = stockDataBeanMap.values().stream()
-                .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
-                .max(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
-                .filter(s -> !s.getCode().equals(stockDataBean.getCode()));
+                                                           .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
+                                                           .max(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getSymbol))
+                                                           .filter(s -> !s.getSymbol().equals(stockDataBean.getSymbol()));
 
         if (optional.isPresent()) {
             StockDataBean bottom = optional.get();
             stockDataBean.setIndex(bottom.getIndex() + MOVE_FACTOR);
             persistStockDataBean();
-            return getModelRowIndex(stockDataBean.getCode());
+            return getModelRowIndex(stockDataBean.getSymbol());
         }
         return -1;
     }
@@ -291,9 +298,9 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
 
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
         List<StockDataBean> list = stockDataBeanMap.values().stream()
-                .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
-                .sorted(Comparator.comparing(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
-                .collect(Collectors.toList());
+                                                   .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
+                                                   .sorted(Comparator.comparing(StockDataBean::getIndex).thenComparing(StockDataBean::getSymbol))
+                                                   .collect(Collectors.toList());
         int index = list.indexOf(stockDataBean);
 
         if (index > 0) {
@@ -303,7 +310,6 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
             return modelRowIndex - 1;
         }
         return modelRowIndex;
-
     }
 
     /**
@@ -315,9 +321,9 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         }
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
         List<StockDataBean> list = stockDataBeanMap.values().stream()
-                .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
-                .sorted(Comparator.comparing(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
-                .collect(Collectors.toList());
+                                                   .filter(s -> s.isPinTop() == stockDataBean.isPinTop())
+                                                   .sorted(Comparator.comparing(StockDataBean::getIndex).thenComparing(StockDataBean::getSymbol))
+                                                   .collect(Collectors.toList());
         int index = list.indexOf(stockDataBean);
 
         if (index < list.size() - 1) {
@@ -327,7 +333,6 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
             return modelRowIndex + 1;
         }
         return modelRowIndex;
-
     }
 
     /**
@@ -345,20 +350,20 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         if (pinTop) {
             // 取消固定
             stockDataBeanMap.values().stream()
-                    .filter(s -> !s.isPinTop())
-                    .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
-                    .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
+                            .filter(s -> !s.isPinTop())
+                            .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getSymbol))
+                            .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
         } else {
             // 固定
             stockDataBeanMap.values().stream()
-                    .filter(StockDataBean::isPinTop)
-                    .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getCode))
-                    .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
+                            .filter(StockDataBean::isPinTop)
+                            .min(Comparator.comparingInt(StockDataBean::getIndex).thenComparing(StockDataBean::getSymbol))
+                            .ifPresent(s -> stockDataBean.setIndex(s.getIndex() - 1));
         }
         stockDataBean.setPinTop(!pinTop);
         persistStockDataBean();
 
-        return getModelRowIndex(stockDataBean.getCode());
+        return getModelRowIndex(stockDataBean.getSymbol());
     }
 
     public boolean isPinTop(int modelRowIndex) {
@@ -370,7 +375,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         if (stockDataBean == null) {
             return false;
         }
-        // System.out.println(modelRowIndex + " isPinTop(): " + stockDataBean.isPinTop() + " " + stockDataBean.getCode());
+        // System.out.println(modelRowIndex + " isPinTop(): " + stockDataBean.isPinTop() + " " + stockDataBean.getSymbol());
         return stockDataBean.isPinTop();
     }
 

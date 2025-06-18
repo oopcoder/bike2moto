@@ -1,6 +1,8 @@
 package cn.oopcoder.b2m.bean;
 
 import cn.oopcoder.b2m.config.StockConfig;
+import cn.oopcoder.b2m.dataSource.history.PriceChange;
+import cn.oopcoder.b2m.dataSource.history.PriceChangeCalculator;
 import cn.oopcoder.b2m.dataSource.StockData;
 import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.JacksonUtil;
@@ -9,6 +11,8 @@ import cn.oopcoder.b2m.utils.NumUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.intellij.ui.JBColor;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,12 +42,15 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class StockDataBean {
 
-    public static final String STOCK_CODE_FIELD_NAME = "code";
+    public static final String STOCK_CODE_FIELD_NAME = "symbol";
     public static final String CHANGE_PERCENT_FIELD_NAME = "changePercent";
     public static final String CHANGE_FIELD_NAME = "change";
     public static final String RANGE_PERCENT_FIELD_NAME = "rangePercent";
     public static final String LOW_PERCENT_FIELD_NAME = "lowPercent";
     public static final String HIGH_PERCENT_FIELD_NAME = "highPercent";
+    public static final String Min1_FIELD_NAME = "changePercentOfMin1";
+    public static final String Min3_FIELD_NAME = "changePercentOfMin3";
+    public static final String Min5_FIELD_NAME = "changePercentOfMin5";
 
     // 调试用，不需要时直接注释
     // @Column(name = "行号", order = 4)
@@ -53,7 +60,7 @@ public class StockDataBean {
     private String name;
 
     @Column(name = "代码", order = 8)
-    private String code;
+    private String symbol;
 
     // 隐蔽模式名，最好是英文
     @Column(name = "马赛克", order = 10, showMode = {Hidden}, hiddenModeName = "mask", editable = true)
@@ -100,6 +107,15 @@ public class StockDataBean {
     @Column(name = "振幅", order = 60, hiddenModeName = "range(%)", enableNumberComparator = true)
     private String rangePercent;
 
+    @Column(name = "1分钟涨幅", order = 70, hiddenModeName = "1min", enableNumberComparator = true)
+    private String changePercentOfMin1;
+
+    @Column(name = "3分钟涨幅", order = 80, hiddenModeName = "3min", enableNumberComparator = true)
+    private String changePercentOfMin3;
+
+    @Column(name = "5分钟涨幅", order = 90, hiddenModeName = "5min", enableNumberComparator = true)
+    private String changePercentOfMin5;
+
     @Column(name = "时间", order = 65, showMode = {Normal})
     private String time;
 
@@ -107,45 +123,44 @@ public class StockDataBean {
     // @Column(name = "固定", order = 45)
     private boolean pinTop = false;
 
-
     public static List<ColumnDefinition> getTableColumnInfos(ShowMode showMode) {
         boolean isHidden = Hidden == showMode;
 
         return Arrays.stream(StockDataBean.class.getDeclaredFields())
-                .filter(field -> {
-                    if (!field.isAnnotationPresent(Column.class)) {
-                        return false;
-                    }
-                    ShowMode[] showModes = field.getAnnotation(Column.class).showMode();
-                    return Arrays.stream(showModes).anyMatch(sm -> sm == showMode);
-                })
-                .map(field -> {
-                    Column tc = field.getAnnotation(Column.class);
-                    String displayName = isHidden ? tc.hiddenModeName() : tc.name();
-                    if (StringUtils.isEmpty(displayName)) {
-                        displayName = field.getName();
-                    }
+                     .filter(field -> {
+                         if (!field.isAnnotationPresent(Column.class)) {
+                             return false;
+                         }
+                         ShowMode[] showModes = field.getAnnotation(Column.class).showMode();
+                         return Arrays.stream(showModes).anyMatch(sm -> sm == showMode);
+                     })
+                     .map(field -> {
+                         Column tc = field.getAnnotation(Column.class);
+                         String displayName = isHidden ? tc.hiddenModeName() : tc.name();
+                         if (StringUtils.isEmpty(displayName)) {
+                             displayName = field.getName();
+                         }
 
-                    String[] foreground = isHidden ? tc.hiddenModeForeground() : tc.foreground();
-                    List<Color> displayColor = new ArrayList<>();
-                    if (foreground != null && foreground.length > 0) {
-                        for (String color : foreground) {
-                            if (StringUtils.isEmpty(color)) {
-                                displayColor.add(null);
-                            } else {
-                                displayColor.add(JBColor.decode(color));
-                            }
-                        }
-                    }
-                    return new ColumnDefinition(field.getName(), displayName, displayColor, tc.order(),
-                            tc.enableNumberComparator(), tc.editable(), isHidden ? 60 : 70);
-                })
-                .sorted(Comparator.comparingInt(ColumnDefinition::getOrder))
-                .collect(Collectors.toList());
+                         String[] foreground = isHidden ? tc.hiddenModeForeground() : tc.foreground();
+                         List<Color> displayColor = new ArrayList<>();
+                         if (foreground != null && foreground.length > 0) {
+                             for (String color : foreground) {
+                                 if (StringUtils.isEmpty(color)) {
+                                     displayColor.add(null);
+                                 } else {
+                                     displayColor.add(JBColor.decode(color));
+                                 }
+                             }
+                         }
+                         return new ColumnDefinition(field.getName(), displayName, displayColor, tc.order(),
+                                                     tc.enableNumberComparator(), tc.editable(), isHidden ? 60 : 70);
+                     })
+                     .sorted(Comparator.comparingInt(ColumnDefinition::getOrder))
+                     .collect(Collectors.toList());
     }
 
     public StockDataBean(StockConfig stockConfig, int index) {
-        this.code = stockConfig.getCode();
+        this.symbol = stockConfig.getSymbol();
         this.maskName = stockConfig.getMaskName();
         this.alias = stockConfig.getAlias();
         this.pinTop = stockConfig.isPinTop();
@@ -164,7 +179,6 @@ public class StockDataBean {
 
         return null;
     }
-
 
     public void copyFrom(StockData stockDataBean) {
         try {
@@ -188,6 +202,26 @@ public class StockDataBean {
 
         double lp = (NumUtil.toDouble(low) - NumUtil.toDouble(preClose)) / NumUtil.toDouble(preClose);
         lowPercent = NumUtil.formatDecimal(lp * 100, 2, 2);
+
+        // 计算1/3/5分钟涨跌幅
+        PriceChangeCalculator calculator = PriceChangeCalculator.getInstance();
+        SimpleDateFormat smt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+            Date date = smt.parse("1970-01-01 " + time);
+
+            // test start
+            // double randomPrice = 100 + (Math.random() * 100);
+            // currentPrice = String.format("%.2f", randomPrice);
+            // Date date = new Date();
+            // test end
+
+            PriceChange changes = calculator.updatePrice(this.getSymbol(), date.getTime(), this.currentPrice);
+            this.changePercentOfMin1 = changes.changePercentOfMin1;
+            this.changePercentOfMin3 = changes.changePercentOfMin3;
+            this.changePercentOfMin5 = changes.changePercentOfMin5;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void setFieldValue(String fieldName, Object value) {

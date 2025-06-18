@@ -31,7 +31,7 @@ public class StockDataUtil {
                 String[] values = dataStr.split("~");
 
                 StockData stockData = new StockData();
-                stockData.setCode(code);
+                stockData.setSymbol(code);
                 stockData.setName(values[1]);
                 stockData.setCurrentPrice(values[3]);
                 stockData.setPreClose(values[4]);

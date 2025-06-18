@@ -7,7 +7,7 @@ import lombok.Data;
 public class StockData {
 
 
-    private String code;
+    private String symbol;
 
     private String name;
 

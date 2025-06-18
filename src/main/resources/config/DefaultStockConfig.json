@@ -1,58 +1,58 @@
 [
   {
-    "code": "sz300059",
+    "symbol": "sz300059",
     "maskName": "dongcai",
     "alias": "富",
     "pinTop": true
   },
   {
-    "code": "sh513090",
+    "symbol": "sh513090",
     "maskName": "xgzq",
     "alias": "港",
     "pinTop": true
   },
   {
-    "code": "sz002195",
+    "symbol": "sz002195",
     "alias": "岩",
     "maskName": "yskj"
   },
   {
-    "code": "sh601360",
+    "symbol": "sh601360",
     "alias": "360",
     "maskName": "360"
   },
   {
-    "code": "sh600031",
+    "symbol": "sh600031",
     "alias": "31",
     "maskName": "31"
   },
   {
-    "code": "sh600900",
+    "symbol": "sh600900",
     "alias": "电",
     "maskName": "dianli"
   },
   {
-    "code": "sh601211",
+    "symbol": "sh601211",
     "alias": "泰",
     "maskName": "gt"
   },
   {
-    "code": "sh601138",
+    "symbol": "sh601138",
     "alias": "联",
     "maskName": "fulian"
   },
   {
-    "code": "sh562500",
+    "symbol": "sh562500",
     "alias": "器",
     "maskName": "jqr"
   },
   {
-    "code": "usBABA",
+    "symbol": "usBABA",
     "alias": "阿",
     "maskName": "ali"
   },
   {
-    "code": "hk01810",
+    "symbol": "hk01810",
     "alias": "米",
     "maskName": "xm"
   }
