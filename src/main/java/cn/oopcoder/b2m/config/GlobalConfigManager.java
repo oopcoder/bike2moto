@@ -67,6 +67,9 @@ public class GlobalConfigManager {
         }
         config = JacksonUtil.fromJson(configJson, GlobalConfig.class);
         System.out.println("refresh(): 刷新配置成功");
+
+        // 股票代码字段名变更过，编码字段会出现null，直接清掉，后面会恢复默认配置
+        config.getStockConfig().removeIf(t -> StringUtils.isEmpty(t.getSymbol()));
     }
 
     private void persist() {
