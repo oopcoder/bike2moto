@@ -24,6 +24,12 @@ import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.FileUtil;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 
+import static cn.oopcoder.b2m.bean.StockDataBean.Min1_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Min3_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Min5_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Threshold1_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Threshold3_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Threshold5_FIELD_NAME;
 import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
 import static cn.oopcoder.b2m.enums.ShowMode.Normal;
 
@@ -153,6 +159,23 @@ public class GlobalConfigManager {
             List<StockConfig> uniqueList = stockDataBeanList.stream()
                     .distinct()
                     .collect(Collectors.toList());
+
+            List<ColumnDefinition> defaultTableColumnInfo = getDefaultTableColumnInfo(false);
+            Map<String, ColumnDefinition> tableColumnInfoMap = defaultTableColumnInfo.stream()
+                    .collect(Collectors.toMap(ColumnDefinition::getFieldName, Function.identity()));
+
+            uniqueList.forEach(t -> {
+                if (t.getReminderThresholdOfMin1() == null) {
+                    t.setReminderThresholdOfMin1(tableColumnInfoMap.get(Min1_FIELD_NAME).getColorThreshold());
+                }
+                if (t.getReminderThresholdOfMin3() == null) {
+                    t.setReminderThresholdOfMin3(tableColumnInfoMap.get(Min3_FIELD_NAME).getColorThreshold());
+                }
+                if (t.getReminderThresholdOfMin5() == null) {
+                    t.setReminderThresholdOfMin5(tableColumnInfoMap.get(Min5_FIELD_NAME).getColorThreshold());
+                }
+            });
+
             persistStockConfig(uniqueList);
             return uniqueList;
         }

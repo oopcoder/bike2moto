@@ -1,22 +1,29 @@
 package cn.oopcoder.b2m.utils;
 
+import org.apache.commons.lang3.ObjectUtils;
+
 import java.math.BigDecimal;
 
 public class NumUtil {
 
-    public static double toDouble(String str) {
-        return toDouble(str, 0.0);
+    public static Double toDouble(Object object) {
+        return toDouble(object, 0.0);
     }
 
-    public static double toDouble(String str, double defaultValue) {
-        if (str == null) {
+    public static Double toDouble(Object object, Double defaultValue) {
+        if (ObjectUtils.isEmpty(object)) {
             return defaultValue;
-        } else {
-            try {
-                return Double.parseDouble(str);
-            } catch (NumberFormatException var4) {
-                return defaultValue;
-            }
+        }
+
+        if (object instanceof Double) {
+            return (Double) object;
+        }
+
+        try {
+            return Double.parseDouble(object.toString());
+        } catch (NumberFormatException var4) {
+            var4.printStackTrace();
+            return defaultValue;
         }
     }
 

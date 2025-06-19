@@ -17,12 +17,15 @@ public class ColumnDefinition {
     private boolean enableNumberSorter;
     private boolean editable;
     private Integer preferredWidth;
+    double colorThreshold;
 
-    public ColumnDefinition(String fieldName, String displayName,
-            List<Color> displayColor, int order,
-            boolean enableNumberSorter, boolean editable, Integer preferredWidth) {
+
+    public ColumnDefinition(String fieldName, String displayName, double colorThreshold,
+                            List<Color> displayColor, int order,
+                            boolean enableNumberSorter, boolean editable, Integer preferredWidth) {
         this.fieldName = fieldName;
         this.displayName = displayName;
+        this.colorThreshold = colorThreshold;
         this.displayColor = displayColor;
         this.order = order;
         this.enableNumberSorter = enableNumberSorter;

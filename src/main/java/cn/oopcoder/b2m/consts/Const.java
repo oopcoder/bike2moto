@@ -17,7 +17,7 @@ public interface Const {
     public static final String REMOVE = "删除";
 
 
-    public static final String EMPTY_VALUE = "--";
+    public static final String EMPTY_VALUE = "";
 
 
 }

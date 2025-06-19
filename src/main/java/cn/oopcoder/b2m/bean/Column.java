@@ -27,6 +27,9 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
     // 隐藏模式下，列名称, 不配置的话默认取英文字段名
     String hiddenModeName() default "";
 
+    // 修改颜色的阈值
+    double colorThreshold() default 0.5;
+
     // 列前景色, 涨 跌 平
     String[] foreground() default {};
 

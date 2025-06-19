@@ -20,8 +20,6 @@ import java.util.Vector;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.swing.table.TableColumn;
-
 import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.bean.ColumnDefinition;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
@@ -85,7 +83,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         });
         updateTableModelData();
 
-        stockWindow.refreshUI();
+        stockWindow.refreshTimeLabel();
     }
 
     public void updateTableModelData() {
@@ -384,6 +382,9 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
     }
 
     public StockDataBean getStockDataBean(int modelRowIndex) {
+        if (modelRowIndex < 0) {
+            return null;
+        }
         String stockCode = getStockCode(modelRowIndex);
         return stockDataBeanMap.get(stockCode);
     }

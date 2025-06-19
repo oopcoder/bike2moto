@@ -1,6 +1,7 @@
 package cn.oopcoder.b2m.window.tool;
 
 import cn.oopcoder.b2m.bean.ColumnDefinition;
+import cn.oopcoder.b2m.bean.StockDataBean;
 import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.consts.Const;
 import cn.oopcoder.b2m.dataSource.StockDataManager;
@@ -13,6 +14,7 @@ import cn.oopcoder.b2m.table.listener.ToggleRowSortMouseListener;
 import cn.oopcoder.b2m.ui.Icons;
 import cn.oopcoder.b2m.utils.NumUtil;
 
+import cn.oopcoder.b2m.utils.ReflectUtil;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -25,6 +27,7 @@ import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -53,6 +56,12 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static cn.oopcoder.b2m.bean.StockDataBean.Min1_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Min3_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Min5_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Threshold1_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Threshold3_FIELD_NAME;
+import static cn.oopcoder.b2m.bean.StockDataBean.Threshold5_FIELD_NAME;
 import static cn.oopcoder.b2m.consts.Const.ADD;
 import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
 import static cn.oopcoder.b2m.enums.ShowMode.Normal;
@@ -61,7 +70,7 @@ public class StockWindow {
 
     public JPanel rootPanel;
     private JBTable table;
-    private JBLabel refreshTimeLabel;
+    private JBLabel lastUpdateTimeLabel;
     private JCheckBox refreshCheckBox;
     private volatile boolean selectedHidden;
     private StockTableModel tableModel;
@@ -247,7 +256,7 @@ public class StockWindow {
         selectedHidden = GlobalConfigManager.getInstance().getShowMode() == Hidden;
 
         AnActionButton showModeAction = new AnActionButton(selectedHidden ? Const.SHOW_MODE_NORMAL : Const.SHOW_MODE_HIDDEN,
-                                                           selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
+                selectedHidden ? Icons.ICON_CHECKBOX_SELECTED : Icons.ICON_CHECKBOX_UNSELECTED) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
 
@@ -282,11 +291,11 @@ public class StockWindow {
 
         rootPanel.add(tablePanel, BorderLayout.CENTER);
 
-        refreshTimeLabel = new JBLabel();
-        refreshTimeLabel.setText("请先启动定时刷新");
-        refreshTimeLabel.setToolTipText("最后刷新时间");
-        refreshTimeLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
-        toolbarDecorator.getActionsPanel().add(refreshTimeLabel, BorderLayout.EAST);
+        lastUpdateTimeLabel = new JBLabel();
+        lastUpdateTimeLabel.setText("请先启动定时刷新");
+        lastUpdateTimeLabel.setToolTipText("最后刷新时间");
+        lastUpdateTimeLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
+        toolbarDecorator.getActionsPanel().add(lastUpdateTimeLabel, BorderLayout.EAST);
 
         // 在ToolbarDecorator放不了，因为没找到从外部更新图标的方法
         refreshCheckBox = new JBCheckBox();
@@ -344,7 +353,7 @@ public class StockWindow {
 
                 // 移动列，只会更改 TableColumn 的顺序，不会修改我们通过 setColumnIdentifiers 设置的表头
                 GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                                                                           tableModel.getSystemTableColumns());
+                        tableModel.getSystemTableColumns());
             }
 
             // 列宽度改变
@@ -353,11 +362,11 @@ public class StockWindow {
                 TableColumnModel model = table.getColumnModel();
                 for (int i = 0; i < model.getColumnCount(); i++) {
                     System.out.printf("Column %d (%s) width: %d%n",
-                                      i, model.getColumn(i).getHeaderValue(), model.getColumn(i).getWidth());
+                            i, model.getColumn(i).getHeaderValue(), model.getColumn(i).getWidth());
                 }
 
                 GlobalConfigManager.getInstance().persistSystemTableColumn(selectedHidden,
-                                                                           tableModel.getSystemTableColumns());
+                        tableModel.getSystemTableColumns());
             }
         });
 
@@ -478,7 +487,7 @@ public class StockWindow {
 
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
-                    boolean isSelected, boolean hasFocus, int row, int column) {
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
                 Component delegate = defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 if (delegate instanceof JLabel) {
                     JLabel cmp = (JLabel) delegate;
@@ -514,7 +523,7 @@ public class StockWindow {
 
         List<ColumnDefinition> columnDefinitions = tableModel.getColumnDefinitions();
         Map<String, ColumnDefinition> tableColumnInfoMap = columnDefinitions.stream()
-                                                                            .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
+                .collect(Collectors.toMap(ColumnDefinition::getDisplayName, Function.identity()));
 
         List<TableColumn> systemTableColumns = tableModel.getSystemTableColumns();
         for (TableColumn tableColumn : systemTableColumns) {
@@ -536,7 +545,7 @@ public class StockWindow {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                        boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
+                                                               boolean hasFocus, int viewRowIndex, int viewColumnIndex) {
 
                     // System.out.println("\n====================" + "行：" + viewRowIndex + ", 列：" + viewColumnIndex + "====================");
                     // System.out.println(" 背景前： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
@@ -544,16 +553,16 @@ public class StockWindow {
                     // 先后顺序还是有点区别，比如选中的时候这里面改了文本的颜色，
                     // 但是下面自定义的前景色把他覆盖了，所以导致选中和未选中的颜色都是一样的
                     Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus,
-                                                                              viewRowIndex, viewColumnIndex);
+                            viewRowIndex, viewColumnIndex);
                     // System.out.println(" 背景中： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
-                    if (!columnDefinition.getDisplayColor().isEmpty()) {
-                        // 设置文本颜色
-                        handleForeground(component, table, value, columnDefinition.getDisplayColor());
-                    }
+                    StockDataBean stockDataBean = tableModel.getStockDataBean(table.convertRowIndexToModel(viewRowIndex));
+
+                    // 设置文本颜色
+                    handleForeground(component, table, value, columnDefinition, viewRowIndex, viewColumnIndex, stockDataBean);
 
                     // 设置行背景色
-                    handleBackground(component, table, isSelected, hasFocus, viewRowIndex, viewColumnIndex);
+                    handleBackground(component, table, isSelected, hasFocus, viewRowIndex, viewColumnIndex, stockDataBean);
                     // System.out.println(" 背景后： " + getBackground() + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
 
                     // System.out.println(" select: " + isSelected + ", focus: " + hasFocus + ", row: " + viewRowIndex + ", column: " + viewColumnIndex);
@@ -572,22 +581,28 @@ public class StockWindow {
         }
     }
 
-    private void handleForeground(Component component, JTable table, Object value, List<Color> colors) {
+    private void handleForeground(Component component, JTable table, Object value, ColumnDefinition columnDefinition,
+                                  int viewRowIndex, int viewColumnIndex, StockDataBean stockDataBean) {
+        List<Color> colors = columnDefinition.getDisplayColor();
+        if (colors.isEmpty()) {
+            return;
+        }
+        double colorThreshold = getColorThreshold(columnDefinition, stockDataBean);
         // 设置前景色
         double doubleValue = NumUtil.toDouble(Objects.toString(value).replace("%", ""));
-        if (doubleValue > 0 && !colors.isEmpty()) {
+        if (doubleValue > colorThreshold) {
             // 涨
             component.setForeground(colors.get(0));
             return;
         }
 
-        if (doubleValue < 0 && colors.size() > 1) {
+        if (doubleValue < -colorThreshold && colors.size() > 1) {
             // 跌
             component.setForeground(colors.get(1));
             return;
         }
 
-        if (doubleValue == 0 && colors.size() > 2) {
+        if (doubleValue >= -colorThreshold && doubleValue <= colorThreshold && colors.size() > 2) {
             // 平
             component.setForeground(colors.get(2));
             return;
@@ -598,9 +613,32 @@ public class StockWindow {
         component.setForeground(null);
     }
 
+    private static double getColorThreshold(ColumnDefinition columnDefinition, StockDataBean stockDataBean) {
+
+        Object fieldValue = null;
+        if (Min1_FIELD_NAME.equals(columnDefinition.getFieldName())) {
+            fieldValue = ReflectUtil.getFieldValue(Threshold1_FIELD_NAME, stockDataBean);
+        }
+        if (Min3_FIELD_NAME.equals(columnDefinition.getFieldName())) {
+            fieldValue = ReflectUtil.getFieldValue(Threshold3_FIELD_NAME, stockDataBean);
+        }
+        if (Min5_FIELD_NAME.equals(columnDefinition.getFieldName())) {
+            fieldValue = ReflectUtil.getFieldValue(Threshold5_FIELD_NAME, stockDataBean);
+        }
+
+        double colorThreshold;
+        if (ObjectUtils.isNotEmpty(fieldValue)) {
+            colorThreshold = NumUtil.toDouble(fieldValue );
+        } else {
+            colorThreshold = columnDefinition.getColorThreshold();
+        }
+
+        return colorThreshold;
+    }
+
     private void handleBackground(Component component, JTable table, boolean isSelected, boolean hasFocus,
-            int viewRowIndex, int viewColumnIndex) {
-        if (isSelected) {
+                                  int viewRowIndex, int viewColumnIndex, StockDataBean stockDataBean) {
+        if (isSelected || stockDataBean == null) {
             // 被选中的行
             // System.out.println("被选中，不处理背景色");
             return;
@@ -608,13 +646,13 @@ public class StockWindow {
 
         // 设置 null 和 不设置是有区别的，看源码注释，设置 null 是继承父类的颜色
         // 不设置的话，会延用上次渲染遗留的颜色，不是我们想要的颜色
-        Color backgroundColor = tableModel.isPinTop(table.convertRowIndexToModel(viewRowIndex)) ? JBColor.LIGHT_GRAY : null;
+        Color backgroundColor = stockDataBean.isPinTop() ? JBColor.LIGHT_GRAY : null;
         component.setBackground(backgroundColor);
         // System.out.println("自定义背景颜色: " + backgroundColor + ", 行：" + viewRowIndex + ", 列：" + viewColumnIndex);
     }
 
-    public void refreshUI() {
-        SwingUtilities.invokeLater(() -> refreshTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
+    public void refreshTimeLabel() {
+        SwingUtilities.invokeLater(() -> lastUpdateTimeLabel.setText(DateFormatUtils.format(new Date(), "HH:mm:ss")));
     }
 
     /**

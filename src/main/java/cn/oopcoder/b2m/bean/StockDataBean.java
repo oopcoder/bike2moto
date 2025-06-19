@@ -56,6 +56,9 @@ public class StockDataBean {
     public static final String Min1_FIELD_NAME = "changePercentOfMin1";
     public static final String Min3_FIELD_NAME = "changePercentOfMin3";
     public static final String Min5_FIELD_NAME = "changePercentOfMin5";
+    public static final String Threshold1_FIELD_NAME = "reminderThresholdOfMin1";
+    public static final String Threshold3_FIELD_NAME = "reminderThresholdOfMin3";
+    public static final String Threshold5_FIELD_NAME = "reminderThresholdOfMin5";
 
     // 调试用，不需要时直接注释
     // @Column(name = "行号", order = 4)
@@ -113,25 +116,25 @@ public class StockDataBean {
     private String rangePercent;
 
     @Column(name = "1分钟涨幅", order = 70, hiddenModeName = "1min", enableNumberComparator = true,
-            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen})
+            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen}, colorThreshold = 2)
     private String changePercentOfMin1;
 
     @Column(name = "3分钟涨幅", order = 80, hiddenModeName = "3min", enableNumberComparator = true,
-            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen})
+            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen}, colorThreshold = 2.5)
     private String changePercentOfMin3;
 
     @Column(name = "5分钟涨幅", order = 90, hiddenModeName = "5min", enableNumberComparator = true,
-            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen})
+            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen}, colorThreshold = 3.5)
     private String changePercentOfMin5;
 
     @Column(name = "1分钟阈值", order = 71, hiddenModeName = "1Thr", enableNumberComparator = true, showMode = {Normal}, editable = true)
-    public String reminderThresholdOfMin1;
+    public Double reminderThresholdOfMin1;
 
     @Column(name = "3分钟阈值", order = 81, hiddenModeName = "3Thr", enableNumberComparator = true, showMode = {Normal}, editable = true)
-    public String reminderThresholdOfMin3;
+    public Double reminderThresholdOfMin3;
 
     @Column(name = "5分钟阈值", order = 91, hiddenModeName = "5Thr", enableNumberComparator = true, showMode = {Normal}, editable = true)
-    public String reminderThresholdOfMin5;
+    public Double reminderThresholdOfMin5;
 
     @Column(name = "时间", order = 100, showMode = {Normal})
     private String time;
@@ -169,7 +172,7 @@ public class StockDataBean {
                             }
                         }
                     }
-                    return new ColumnDefinition(field.getName(), displayName, displayColor, tc.order(),
+                    return new ColumnDefinition(field.getName(), displayName, tc.colorThreshold(), displayColor, tc.order(),
                             tc.enableNumberComparator(), tc.editable(), isHidden ? 60 : 70);
                 })
                 .sorted(Comparator.comparingInt(ColumnDefinition::getOrder))
@@ -182,19 +185,20 @@ public class StockDataBean {
     }
 
     public void calculate() {
-        double d = NumUtil.toDouble(high) - NumUtil.toDouble(low);
-        range = NumUtil.formatDecimal(d, 2, 3);
-
-        double hp = (NumUtil.toDouble(high) - NumUtil.toDouble(preClose)) / NumUtil.toDouble(preClose);
-        highPercent = NumUtil.formatDecimal(hp * 100, 2, 2);
-
-        double lp = (NumUtil.toDouble(low) - NumUtil.toDouble(preClose)) / NumUtil.toDouble(preClose);
-        lowPercent = NumUtil.formatDecimal(lp * 100, 2, 2);
-
-        // 计算1/3/5分钟涨跌幅
-        PriceChangeCalculator calculator = PriceChangeCalculator.getInstance();
-        SimpleDateFormat smt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         try {
+
+            double d = NumUtil.toDouble(high) - NumUtil.toDouble(low);
+            range = NumUtil.formatDecimal(d, 2, 3);
+
+            double hp = (NumUtil.toDouble(high) - NumUtil.toDouble(preClose)) / NumUtil.toDouble(preClose);
+            highPercent = NumUtil.formatDecimal(hp * 100, 2, 2);
+
+            double lp = (NumUtil.toDouble(low) - NumUtil.toDouble(preClose)) / NumUtil.toDouble(preClose);
+            lowPercent = NumUtil.formatDecimal(lp * 100, 2, 2);
+
+            // 计算1/3/5分钟涨跌幅
+            PriceChangeCalculator calculator = PriceChangeCalculator.getInstance();
+            SimpleDateFormat smt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Date date = smt.parse("1970-01-01 " + time);
 
             // test start

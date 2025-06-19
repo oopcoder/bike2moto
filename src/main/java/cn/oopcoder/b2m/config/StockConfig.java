@@ -26,9 +26,9 @@ public class StockConfig {
     private boolean pinTop = false;
 
     // 快速涨幅提醒阈值
-    private String reminderThresholdOfMin1 = "2";
-    private String reminderThresholdOfMin3 = "2.5";
-    private String reminderThresholdOfMin5 = "3.5";
+    private Double reminderThresholdOfMin1;
+    private Double reminderThresholdOfMin3;
+    private Double reminderThresholdOfMin5;
 
 
     public StockConfig(StockDataBean stockDataBean) {
