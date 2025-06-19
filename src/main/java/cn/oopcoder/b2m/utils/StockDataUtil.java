@@ -70,6 +70,7 @@ public class StockDataUtil {
 
 
     public static String getStockData(String codes) throws Exception {
+        // 港股延时
         String result = HttpClientPool.getHttpClient().get("http://qt.gtimg.cn/q=" + codes);
         // System.out.println("http请求股票数据结果: " + result);
         return result;

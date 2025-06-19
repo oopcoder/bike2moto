@@ -1,5 +1,7 @@
 package cn.oopcoder.b2m.config;
 
+import cn.oopcoder.b2m.dataSource.history.PriceChange;
+import cn.oopcoder.b2m.dataSource.history.PriceChangeCalculator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.ide.util.PropertiesComponent;
 
@@ -90,6 +92,9 @@ public class GlobalConfigManager {
             // propertiesComponent.unsetValue(GLOBAL_CONFIG_KEY);// 这个没效果？有空测试一下
             propertiesComponent.setValue(GLOBAL_CONFIG_KEY, "");
             System.out.println("配置清除成功：【" + json + " 】");
+
+            PriceChangeCalculator.getInstance(). cleanUpOldData();
+
             return;
         }
 

@@ -1,5 +1,8 @@
 package cn.oopcoder.b2m.dataSource.history;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -29,8 +32,14 @@ public class PriceHistory {
     }
 
     public synchronized void cleanUp() {
-        long cutoffTime = System.currentTimeMillis() - CLEAN_MINUTES_AGO;
-        dataPoints.entrySet().removeIf(entry -> entry.getKey() < cutoffTime);
+        try {
+            String time = new SimpleDateFormat("HH:mm:ss").format(new Date());
+            Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("1970-01-01 " + time);
+            long cutoffTime = date.getTime() - CLEAN_MINUTES_AGO;
+            dataPoints.entrySet().removeIf(entry -> entry.getKey() < cutoffTime);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public synchronized PriceChange calculateChanges(long time, String price) {
@@ -66,10 +75,11 @@ public class PriceHistory {
 
     private Double findPriceAtTime(long targetTime) {
         // 允许的时间误差范围
-        final long MAX_TIME_DIFF = 4000;
+        final long MAX_TIME_DIFF = 5000;
 
         // 遍历所有数据点，寻找在目标时间±3秒内的数据点
         for (Map.Entry<Long, PriceDataPoint> entry : dataPoints.entrySet()) {
+            // System.out.println("findPriceAtTime(): " + entry.getKey());
             long diff = Math.abs(entry.getKey() - targetTime);
             if (diff <= MAX_TIME_DIFF) {
                 try {

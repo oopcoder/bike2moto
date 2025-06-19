@@ -2,6 +2,7 @@ package cn.oopcoder.b2m.dataSource.history;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import lombok.Getter;
 
 public class PriceChangeCalculator {
@@ -40,9 +41,8 @@ public class PriceChangeCalculator {
     }
 
     // 清理过期数据
-    private void cleanUpOldData() {
-        priceHistories.forEach((symbol, history) -> {
-            history.cleanUp();
-        });
+    public void cleanUpOldData() {
+        System.out.println("cleanUpOldData(): 清除股票过时的分时数据");
+        priceHistories.forEach((symbol, history) -> history.cleanUp());
     }
 }
