@@ -3,6 +3,8 @@ package cn.oopcoder.b2m.dataSource.history;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static cn.oopcoder.b2m.consts.Const.EMPTY_VALUE;
+
 /**
  * Created by oopcoder at 2025/6/18 21:21 .
  * 价格历史数据类
@@ -33,7 +35,7 @@ public class PriceHistory {
 
     public synchronized PriceChange calculateChanges(long time, String price) {
         if (dataPoints.isEmpty()) {
-            return new PriceChange("--", "--", "--");
+            return new PriceChange(EMPTY_VALUE, EMPTY_VALUE, EMPTY_VALUE);
         }
 
         long oneMinuteAgo = time - (60 * 1000);
@@ -50,15 +52,15 @@ public class PriceHistory {
 
             // 计算涨幅
             String oneMinChange = (oneMinPrice != null) ?
-                    calculateChangePercent(currentPrice, oneMinPrice) : "--";
+                    calculateChangePercent(currentPrice, oneMinPrice) : EMPTY_VALUE;
             String threeMinChange = (threeMinPrice != null) ?
-                    calculateChangePercent(currentPrice, threeMinPrice) : "--";
+                    calculateChangePercent(currentPrice, threeMinPrice) : EMPTY_VALUE;
             String fiveMinChange = (fiveMinPrice != null) ?
-                    calculateChangePercent(currentPrice, fiveMinPrice) : "--";
+                    calculateChangePercent(currentPrice, fiveMinPrice) : EMPTY_VALUE;
             return new PriceChange(oneMinChange, threeMinChange, fiveMinChange);
         } catch (NumberFormatException e) {
             e.printStackTrace();
-            return new PriceChange("--", "--", "--");
+            return new PriceChange(EMPTY_VALUE, EMPTY_VALUE, EMPTY_VALUE);
         }
     }
 
@@ -85,7 +87,7 @@ public class PriceHistory {
 
     private String calculateChangePercent(double currentPrice, double oldPrice) {
         if (oldPrice == 0) {
-            return "--";
+            return EMPTY_VALUE;
         }
 
         double change = ((currentPrice - oldPrice) / oldPrice) * 100;
