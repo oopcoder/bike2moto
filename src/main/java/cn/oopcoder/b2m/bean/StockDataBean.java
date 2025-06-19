@@ -8,11 +8,13 @@ import cn.oopcoder.b2m.enums.ShowMode;
 import cn.oopcoder.b2m.utils.JacksonUtil;
 
 import cn.oopcoder.b2m.utils.NumUtil;
+import cn.oopcoder.b2m.utils.ReflectUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.intellij.ui.JBColor;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,10 +32,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static cn.oopcoder.b2m.consts.ColorHexConst.coralRed;
 import static cn.oopcoder.b2m.consts.ColorHexConst.lightRed;
+import static cn.oopcoder.b2m.consts.ColorHexConst.mossGreen;
 import static cn.oopcoder.b2m.consts.ColorHexConst.softGreen;
 import static cn.oopcoder.b2m.enums.ShowMode.Hidden;
 import static cn.oopcoder.b2m.enums.ShowMode.Normal;
+import static cn.oopcoder.b2m.utils.ReflectUtil.setFieldValue;
 
 @Data
 @AllArgsConstructor
@@ -107,16 +112,28 @@ public class StockDataBean {
     @Column(name = "振幅", order = 60, hiddenModeName = "range(%)", enableNumberComparator = true)
     private String rangePercent;
 
-    @Column(name = "1分钟涨幅", order = 70, hiddenModeName = "1min", enableNumberComparator = true)
+    @Column(name = "1分钟涨幅", order = 70, hiddenModeName = "1min", enableNumberComparator = true,
+            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen})
     private String changePercentOfMin1;
 
-    @Column(name = "3分钟涨幅", order = 80, hiddenModeName = "3min", enableNumberComparator = true)
+    @Column(name = "3分钟涨幅", order = 80, hiddenModeName = "3min", enableNumberComparator = true,
+            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen})
     private String changePercentOfMin3;
 
-    @Column(name = "5分钟涨幅", order = 90, hiddenModeName = "5min", enableNumberComparator = true)
+    @Column(name = "5分钟涨幅", order = 90, hiddenModeName = "5min", enableNumberComparator = true,
+            foreground = {coralRed, mossGreen}, hiddenModeForeground = {coralRed, mossGreen})
     private String changePercentOfMin5;
 
-    @Column(name = "时间", order = 65, showMode = {Normal})
+    @Column(name = "1分钟阈值", order = 71, hiddenModeName = "1Thr", enableNumberComparator = true, showMode = {Normal}, editable = true)
+    public String reminderThresholdOfMin1;
+
+    @Column(name = "3分钟阈值", order = 81, hiddenModeName = "3Thr", enableNumberComparator = true, showMode = {Normal}, editable = true)
+    public String reminderThresholdOfMin3;
+
+    @Column(name = "5分钟阈值", order = 91, hiddenModeName = "5Thr", enableNumberComparator = true, showMode = {Normal}, editable = true)
+    public String reminderThresholdOfMin5;
+
+    @Column(name = "时间", order = 100, showMode = {Normal})
     private String time;
 
     // 固定在顶部
@@ -127,70 +144,41 @@ public class StockDataBean {
         boolean isHidden = Hidden == showMode;
 
         return Arrays.stream(StockDataBean.class.getDeclaredFields())
-                     .filter(field -> {
-                         if (!field.isAnnotationPresent(Column.class)) {
-                             return false;
-                         }
-                         ShowMode[] showModes = field.getAnnotation(Column.class).showMode();
-                         return Arrays.stream(showModes).anyMatch(sm -> sm == showMode);
-                     })
-                     .map(field -> {
-                         Column tc = field.getAnnotation(Column.class);
-                         String displayName = isHidden ? tc.hiddenModeName() : tc.name();
-                         if (StringUtils.isEmpty(displayName)) {
-                             displayName = field.getName();
-                         }
+                .filter(field -> {
+                    if (!field.isAnnotationPresent(Column.class)) {
+                        return false;
+                    }
+                    ShowMode[] showModes = field.getAnnotation(Column.class).showMode();
+                    return Arrays.stream(showModes).anyMatch(sm -> sm == showMode);
+                })
+                .map(field -> {
+                    Column tc = field.getAnnotation(Column.class);
+                    String displayName = isHidden ? tc.hiddenModeName() : tc.name();
+                    if (StringUtils.isEmpty(displayName)) {
+                        displayName = field.getName();
+                    }
 
-                         String[] foreground = isHidden ? tc.hiddenModeForeground() : tc.foreground();
-                         List<Color> displayColor = new ArrayList<>();
-                         if (foreground != null && foreground.length > 0) {
-                             for (String color : foreground) {
-                                 if (StringUtils.isEmpty(color)) {
-                                     displayColor.add(null);
-                                 } else {
-                                     displayColor.add(JBColor.decode(color));
-                                 }
-                             }
-                         }
-                         return new ColumnDefinition(field.getName(), displayName, displayColor, tc.order(),
-                                                     tc.enableNumberComparator(), tc.editable(), isHidden ? 60 : 70);
-                     })
-                     .sorted(Comparator.comparingInt(ColumnDefinition::getOrder))
-                     .collect(Collectors.toList());
+                    String[] foreground = isHidden ? tc.hiddenModeForeground() : tc.foreground();
+                    List<Color> displayColor = new ArrayList<>();
+                    if (foreground != null && foreground.length > 0) {
+                        for (String color : foreground) {
+                            if (StringUtils.isEmpty(color)) {
+                                displayColor.add(null);
+                            } else {
+                                displayColor.add(JBColor.decode(color));
+                            }
+                        }
+                    }
+                    return new ColumnDefinition(field.getName(), displayName, displayColor, tc.order(),
+                            tc.enableNumberComparator(), tc.editable(), isHidden ? 60 : 70);
+                })
+                .sorted(Comparator.comparingInt(ColumnDefinition::getOrder))
+                .collect(Collectors.toList());
     }
 
     public StockDataBean(StockConfig stockConfig, int index) {
-        this.symbol = stockConfig.getSymbol();
-        this.maskName = stockConfig.getMaskName();
-        this.alias = stockConfig.getAlias();
-        this.pinTop = stockConfig.isPinTop();
         this.index = index;
-    }
-
-    public Object getFieldValue(String fieldName) {
-        // 使用反射获取属性值
-        try {
-            java.lang.reflect.Field field = StockDataBean.class.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            return field.get(this);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    public void copyFrom(StockData stockDataBean) {
-        try {
-            Field[] fields = StockData.class.getDeclaredFields();
-            for (Field field : fields) {
-                field.setAccessible(true);
-                Object o = field.get(stockDataBean);
-                setFieldValue(field.getName(), o);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        ReflectUtil.copy(stockConfig, this);
     }
 
     public void calculate() {
@@ -222,61 +210,6 @@ public class StockDataBean {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public void setFieldValue(String fieldName, Object value) {
-        try {
-            // 1. 获取字段对象
-            Field field = StockDataBean.class.getDeclaredField(fieldName);
-            field.setAccessible(true);
-
-            // 2. 根据字段类型转换值
-            Object convertedValue = convertValueToFieldType(value, field.getType());
-
-            // 3. 设置字段值
-            if (convertedValue != null) {
-                field.set(this, convertedValue);
-            } else {
-                System.err.println("Failed to convert value for field: " + fieldName);
-            }
-        } catch (NoSuchFieldException e) {
-            System.err.println("Field not found: " + fieldName);
-        } catch (IllegalAccessException e) {
-            System.err.println("Access denied to field: " + fieldName);
-        }
-    }
-
-    /**
-     * 将输入值转换为字段的目标类型
-     */
-    private Object convertValueToFieldType(Object value, Class<?> targetType) {
-        if (value == null) {
-            return null;
-        }
-
-        try {
-            // 处理常见类型转换
-            if (targetType == String.class) {
-                return value.toString();
-            } else if (targetType == Integer.class || targetType == int.class) {
-                return Integer.parseInt(value.toString());
-            } else if (targetType == Long.class || targetType == long.class) {
-                return Long.parseLong(value.toString());
-            } else if (targetType == Double.class || targetType == double.class) {
-                return Double.parseDouble(value.toString());
-            } else if (targetType == BigDecimal.class) {
-                return new BigDecimal(value.toString());
-            } else if (targetType == Date.class) {
-                // 假设输入是时间戳（Long）或日期字符串
-                return value instanceof Long ? new Date((Long) value) : new Date(value.toString());
-            } else if (targetType == Boolean.class || targetType == boolean.class) {
-                return Boolean.parseBoolean(value.toString());
-            }
-            // 其他类型可继续扩展...
-        } catch (Exception e) {
-            System.err.println("Type conversion failed. Target: " + targetType + ", Input: " + value);
-        }
-        return null;
     }
 
     @Override

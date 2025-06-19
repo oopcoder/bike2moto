@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -93,7 +94,7 @@ public class GlobalConfigManager {
             propertiesComponent.setValue(GLOBAL_CONFIG_KEY, "");
             System.out.println("配置清除成功：【" + json + " 】");
 
-            PriceChangeCalculator.getInstance(). cleanUpOldData();
+            PriceChangeCalculator.getInstance().cleanUpOldData();
 
             return;
         }
@@ -129,7 +130,7 @@ public class GlobalConfigManager {
 
         // 按顺序 持久化
         List<StockConfig> list = stockDataBeans.stream()
-                .map(t -> new StockConfig(t.getSymbol(), t.getMaskName(), t.getAlias(), t.isPinTop()))
+                .map(StockConfig::new)
                 .collect(Collectors.toList());
 
         persistStockConfig(list);

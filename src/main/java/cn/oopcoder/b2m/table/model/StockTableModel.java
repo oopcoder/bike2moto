@@ -4,6 +4,7 @@ import cn.oopcoder.b2m.dataSource.StockData;
 import cn.oopcoder.b2m.dataSource.StockDataListener;
 import cn.oopcoder.b2m.dataSource.StockDataManager;
 import cn.oopcoder.b2m.factory.ProjectHolder;
+import cn.oopcoder.b2m.utils.ReflectUtil;
 import cn.oopcoder.b2m.utils.StockDataUtil;
 
 import cn.oopcoder.b2m.window.tool.StockWindow;
@@ -40,6 +41,7 @@ import static cn.oopcoder.b2m.bean.StockDataBean.RANGE_PERCENT_FIELD_NAME;
 import static cn.oopcoder.b2m.bean.StockDataBean.STOCK_CODE_FIELD_NAME;
 import static cn.oopcoder.b2m.config.GlobalConfigManager.MOVE_FACTOR;
 import static cn.oopcoder.b2m.consts.Const.EMPTY_VALUE;
+import static cn.oopcoder.b2m.utils.ReflectUtil.setFieldValue;
 
 /**
  * Created by oopcoder at 2025/6/2 15:32 .
@@ -77,7 +79,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         stockDataMap.forEach((code, stockData) -> {
             StockDataBean stockDataBean = stockDataBeanMap.get(code);
             if (stockDataBean != null) {
-                stockDataBean.copyFrom(stockData);
+                ReflectUtil.copy(stockData, stockDataBean);
                 stockDataBean.calculate();
             }
         });
@@ -111,7 +113,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
             Vector<Object> vector = new Vector<>(columnDefinitions.size());
             for (ColumnDefinition columnDefinition : columnDefinitions) {
                 String fieldName = columnDefinition.getFieldName();
-                Object fieldValue = stockDataBean.getFieldValue(fieldName);
+                Object fieldValue = ReflectUtil.getFieldValue(fieldName, stockDataBean);
                 fieldValue = transformValue(fieldValue, fieldName);
                 vector.addElement(fieldValue);
             }
@@ -170,7 +172,7 @@ public class StockTableModel extends ColumnDefinitionTableModel implements Stock
         StockDataBean stockDataBean = getStockDataBean(modelRowIndex);
 
         String fieldName = getColumnDefinition(modelColumnIndex).getFieldName();
-        stockDataBean.setFieldValue(fieldName, aValue);
+        setFieldValue(fieldName, stockDataBean, aValue);
 
         persistStockDataBean();
     }

@@ -1,5 +1,7 @@
 package cn.oopcoder.b2m.config;
 
+import cn.oopcoder.b2m.bean.StockDataBean;
+import cn.oopcoder.b2m.utils.ReflectUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.AllArgsConstructor;
@@ -22,6 +24,16 @@ public class StockConfig {
 
     // 固定在顶部
     private boolean pinTop = false;
+
+    // 快速涨幅提醒阈值
+    private String reminderThresholdOfMin1 = "2";
+    private String reminderThresholdOfMin3 = "2.5";
+    private String reminderThresholdOfMin5 = "3.5";
+
+
+    public StockConfig(StockDataBean stockDataBean) {
+        ReflectUtil.copy(stockDataBean, this);
+    }
 
     @Override
     public boolean equals(Object o) {

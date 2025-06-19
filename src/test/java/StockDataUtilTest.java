@@ -3,6 +3,7 @@ import cn.oopcoder.b2m.config.GlobalConfigManager;
 import cn.oopcoder.b2m.config.StockConfig;
 import cn.oopcoder.b2m.dataSource.StockData;
 import cn.oopcoder.b2m.utils.JacksonUtil;
+import cn.oopcoder.b2m.utils.ReflectUtil;
 import cn.oopcoder.b2m.utils.StockDataUtil;
 import org.junit.Test;
 
@@ -43,7 +44,7 @@ public class StockDataUtilTest {
 
         for (StockData stockData : dataMap.values()) {
             StockDataBean stockDataBean = new StockDataBean();
-            stockDataBean.copyFrom(stockData);
+            ReflectUtil.copy(stockData, stockDataBean);
             stockDataBean.calculate();
 
             System.out.println(JacksonUtil.toJson(stockDataBean));
