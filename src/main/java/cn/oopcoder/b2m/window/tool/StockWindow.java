@@ -100,14 +100,49 @@ public class StockWindow {
         addAction = new AnActionButton(ADD, Icons.ICON_ADD) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
+                // String stockCode = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
                 // 弹窗新增逻辑
-                String stockCode = JOptionPane.showInputDialog(rootPanel, "请输入新的股票代码", "新增股票", JOptionPane.PLAIN_MESSAGE);
-                if (stockCode != null && !stockCode.trim().isEmpty()) {
+                JPanel panel = new JPanel(new BorderLayout(0, 10));
+                panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+                
+                JLabel inputLabel = new JLabel("请输入新的股票代码");
+                inputLabel.setFont(inputLabel.getFont().deriveFont(Font.BOLD));
+                
+                JTextField textField = new JTextField();
+                panel.add(inputLabel, BorderLayout.NORTH);
+                panel.add(textField, BorderLayout.CENTER);
+
+                int result = JOptionPane.showConfirmDialog(
+                        rootPanel,
+                        panel,
+                        "新增股票", 
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.PLAIN_MESSAGE
+                );
+                if (result != JOptionPane.OK_OPTION) {
+                    return;
+                }
+                String stockCode = textField.getText().trim();
+                if (!stockCode.isEmpty()) {
                     try {
                         int modelRowIndex = tableModel.addStock(stockCode);
                         selectRow(modelRowIndex);
                     } catch (Exception exception) {
-                        JOptionPane.showMessageDialog(rootPanel, exception.getLocalizedMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                        // 创建带样式的错误提示面板
+                        JPanel errorPanel = new JPanel(new BorderLayout(0, 10));
+                        errorPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+                        
+                        JLabel errorLabel = new JLabel(exception.getLocalizedMessage());
+                        errorLabel.setFont(errorLabel.getFont().deriveFont(Font.BOLD));
+                        
+                        errorPanel.add(errorLabel, BorderLayout.CENTER);
+                        
+                        JOptionPane.showMessageDialog(
+                            rootPanel,
+                            errorPanel,
+                            "错误",
+                            JOptionPane.ERROR_MESSAGE
+                        );
                     }
                 }
             }
@@ -221,9 +256,16 @@ public class StockWindow {
         AnAction resetDefaultConfigAction = new AnActionButton(Const.RESET_DEFAULT_CONFIG, Icons.ICON_RESET_DEFAULT_CONFIG) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                JPanel panel = new JPanel(new BorderLayout());
+                JPanel panel = new JPanel(new BorderLayout(0, 10));
+                panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+                
+                JLabel warningLabel = new JLabel("确定要恢复默认配置吗？此操作不可撤销！");
+                warningLabel.setFont(warningLabel.getFont().deriveFont(Font.BOLD));
+                
                 JCheckBox clearStockCheckBox = new JCheckBox("同时清除股票配置", false);
-                panel.add(new JLabel("确定要恢复默认配置吗？此操作不可撤销！"), BorderLayout.NORTH);
+                clearStockCheckBox.setBorder(new EmptyBorder(5, 0, 0, 0));
+                
+                panel.add(warningLabel, BorderLayout.NORTH);
                 panel.add(clearStockCheckBox, BorderLayout.CENTER);
 
                 int result = JOptionPane.showConfirmDialog(
@@ -292,7 +334,6 @@ public class StockWindow {
         rootPanel.add(tablePanel, BorderLayout.CENTER);
 
         lastUpdateTimeLabel = new JBLabel();
-        lastUpdateTimeLabel.setText("请先启动定时刷新");
         lastUpdateTimeLabel.setToolTipText("最后刷新时间");
         lastUpdateTimeLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
         toolbarDecorator.getActionsPanel().add(lastUpdateTimeLabel, BorderLayout.EAST);
