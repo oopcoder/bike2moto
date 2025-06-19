@@ -212,9 +212,14 @@ public class StockWindow {
         AnAction resetDefaultConfigAction = new AnActionButton(Const.RESET_DEFAULT_CONFIG, Icons.ICON_RESET_DEFAULT_CONFIG) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
+                JPanel panel = new JPanel(new BorderLayout());
+                JCheckBox clearStockCheckBox = new JCheckBox("同时清除股票配置", false);
+                panel.add(new JLabel("确定要恢复默认配置吗？此操作不可撤销！"), BorderLayout.NORTH);
+                panel.add(clearStockCheckBox, BorderLayout.CENTER);
+
                 int result = JOptionPane.showConfirmDialog(
                         rootPanel,
-                        "确定要恢复默认配置吗？此操作不可撤销！",
+                        panel,
                         "确认恢复",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE
@@ -222,7 +227,7 @@ public class StockWindow {
                 if (result != JOptionPane.YES_OPTION) {
                     return;
                 }
-                GlobalConfigManager.getInstance().clear();
+                GlobalConfigManager.getInstance().clear(clearStockCheckBox.isSelected());
                 createModel();
 
                 // 更新其他窗口的图标

@@ -82,14 +82,22 @@ public class GlobalConfigManager {
         }
     }
 
-    public void clear() {
-        String json = config == null ? null : JacksonUtil.toJson(this.config);
-        // propertiesComponent.unsetValue(GLOBAL_CONFIG_KEY);// 这个没效果？有空测试一下
-        propertiesComponent.setValue(GLOBAL_CONFIG_KEY, "");
-        System.out.println("配置清除成功：【" + json + " 】");
-        config = null;
-        hiddenTableColumnInfos = null;
-        normalTableColumnInfos = null;
+    public void clear(boolean clearStockConfig) {
+        if (clearStockConfig) {
+            String json = config == null ? null : JacksonUtil.toJson(this.config);
+            config = null;
+
+            // propertiesComponent.unsetValue(GLOBAL_CONFIG_KEY);// 这个没效果？有空测试一下
+            propertiesComponent.setValue(GLOBAL_CONFIG_KEY, "");
+            System.out.println("配置清除成功：【" + json + " 】");
+            return;
+        }
+
+        if (config != null) {
+            List<StockConfig> stockConfig = config.stockConfig;
+            config = new GlobalConfig(null, null, stockConfig, null);
+        }
+        persist();
     }
 
     // 排序间隔，必须要大于 MOVE_FACTOR，
