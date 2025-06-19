@@ -3,13 +3,19 @@
     "symbol": "sz300059",
     "maskName": "dongcai",
     "alias": "富",
-    "pinTop": true
+    "pinTop": true,
+    "reminderThresholdOfMin1": 1.5,
+    "reminderThresholdOfMin3": 2,
+    "reminderThresholdOfMin5": 3
   },
   {
     "symbol": "sh513090",
     "maskName": "xgzq",
     "alias": "港",
-    "pinTop": true
+    "pinTop": true,
+    "reminderThresholdOfMin1": 2,
+    "reminderThresholdOfMin3": 2.5,
+    "reminderThresholdOfMin5": 3
   },
   {
     "symbol": "sz002195",

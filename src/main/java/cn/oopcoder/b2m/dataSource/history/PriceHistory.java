@@ -75,7 +75,7 @@ public class PriceHistory {
 
     private Double findPriceAtTime(long targetTime) {
         // 允许的时间误差范围
-        final long MAX_TIME_DIFF = 5000;
+        final long MAX_TIME_DIFF = 6000;
 
         // 遍历所有数据点，寻找在目标时间±3秒内的数据点
         for (Map.Entry<Long, PriceDataPoint> entry : dataPoints.entrySet()) {

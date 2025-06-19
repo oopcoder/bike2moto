@@ -28,7 +28,7 @@ import static cn.oopcoder.b2m.enums.ShowMode.Normal;
     String hiddenModeName() default "";
 
     // 修改颜色的阈值
-    double colorThreshold() default 0.5;
+    double colorThreshold() default 0;
 
     // 列前景色, 涨 跌 平
     String[] foreground() default {};
